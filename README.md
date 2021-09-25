@@ -1,4 +1,4 @@
-# Team-Zakdu Backend ReadMe
+# Team-Zakdu Backend Readme
 
 **1. 프로젝트 정보** 
 - 캡스톤디자인 5분반 3팀 백엔드 서버
@@ -23,11 +23,17 @@
 
 - main branch는 배포용 브랜치입니다. 개발 시에는 develop 브랜치를 메인으로 사용해 주세요.
 
-   본인 계정으로 fork한 Repository로부터 아래와 같이 코드 기여할 수 있습니다.
+   본인 계정으로 fork한 Repository로부터 본 Repository로 아래와 같이 기여할 수 있습니다.
   
   `
   git remote add upstream ${그룹 레포지토리 클론 주소}
+  `
+  
+  `
   git add~commit
+  `
+  
+  `
   git push **upstream** develop
   `
   
