@@ -1,47 +1,34 @@
 package capstone.jakdu.ocrtest;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.rendering.ImageType;
-import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 import org.junit.jupiter.api.Test;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class ocrexample {
-
-    @AllArgsConstructor
-    @Getter
-    private class MyTextPosition {
-        private float x;
-        private float y;
-        private float endX;
-        private float height;
-        private String text;
-        private int id;
-    }
-    static int id;
+    List<MyTextPosition> myTextPositions = new ArrayList<>();
+    static int id = 0;
     float xMin = 999;
     float xMax = 0;
     // 1열
     class MyTextPositionComparator implements Comparator<MyTextPosition> {
         @Override
         public int compare(MyTextPosition o1, MyTextPosition o2) {
-            if(Math.abs(o1.y - o2.y) < Math.min(o1.height, o2.height)) {
+            if(Math.abs(o1.y - o2.y) < Math.min(o1.fontSize, o2.fontSize)) {
                 if(o1.x < o2.x) return -1;
                 else return 1;
             }
@@ -85,7 +72,7 @@ public class ocrexample {
              // o1과 o2가 같은 열에 있는 경우
             else{
                 // o1과 o2가 같은 행에 있는 경우
-                if(Math.abs(o1.y - o2.y) < Math.min(o1.height, o2.height)) {
+                if(Math.abs(o1.y - o2.y) < Math.min(o1.fontSize, o2.fontSize)) {
                     if(o1.x < o2.x) return -1;
                     else return 1;
                 }
@@ -109,7 +96,7 @@ public class ocrexample {
         }
     }
 
-    List<MyTextPosition> myTextPositions = new ArrayList<>();
+
 
     PDFTextStripper reader = new PDFTextStripper() {
         boolean startOfLine = true;
@@ -127,28 +114,36 @@ public class ocrexample {
 
         @Override
         protected void writeString(String text, List<TextPosition> textPositions) throws IOException {
-            byte[] b = text.getBytes("UTF-8");
+            byte[] b = text.getBytes(StandardCharsets.UTF_8);
             if(b[b.length-1] == 8)
                 b = Arrays.copyOfRange(b, 0, b.length - 1);
             else if(b[0] == 8 && b[1] == 8) {
                 b = Arrays.copyOfRange(b, 2, b.length);
             }
-            text = new String(b, "UTF-8");
+            text = new String(b, StandardCharsets.UTF_8);
+
             String tempText = text.replaceAll(" ", "");
+
             text = text.replaceAll("\\s+", " ");
             //text = text.replaceAll("\t")
-            if(tempText.contains("차례") || tempText.toLowerCase().contains("contents")) {
+            if(tempText.contains("차례") ||
+                    tempText.toLowerCase().contains("contents") ||
+                    tempText.toLowerCase().contains("indd") ||
+                    isDate(tempText)  ) {
+
                 System.out.println("[차례]text = " + text);
                 return;
             }
             TextPosition first = textPositions.get(0);
-            TextPosition last = textPositions.get(textPositions.size() - 1);
-            xMax = Math.max(xMax, first.getEndX());
-            xMin = Math.min(xMin, last.getEndX());
+            TextPosition last = textPositions.get(text.length() - 1);
+
+
             for (int i = 0; i < text.length(); i++) {
                 TextPosition t = textPositions.get(i);
-                //System.out.println("" + text.substring(i, i + 1) + "/" + t.getX() + "/" + t.getY());
-                myTextPositions.add(new MyTextPosition(t.getX(), t.getY(), t.getEndX(), t.getHeight(), text.substring(i, i + 1), id));
+                xMax = Math.max(xMax, textPositions.get(i).getEndX());
+                xMin = Math.min(xMin, textPositions.get(i).getX());
+                System.out.println("" + text.substring(i, i + 1) + "/" + t.getX() + "/" + t.getEndX());
+                myTextPositions.add(new MyTextPosition(t.getX(), t.getY(), t.getEndX(), t.getFontSizeInPt(), text.substring(i, i + 1), id));
             }
             id++;
 //            System.out.println("text = " + text + "/" + first.getX() + "/" + first.getY() + "/" + last.getEndX() + "/" + last.getHeight());
@@ -243,18 +238,79 @@ public class ocrexample {
         String pageText = reader.getText(pdfDoc);
         System.out.println(pageText);
         System.out.println("===========");
+        System.out.println("xMax, xMin :" + xMax+ " " + xMin);
         myTextPositions.sort(new MyTextPositionComparatorMultiCol(xMax - xMin, 3));
         int before = myTextPositions.get(0).getId();
+
+        String sameLineTextString = "";
+        List<MyTextPosition> chuckWordList = new ArrayList<>();
+        float fontSize = myTextPositions.get(0).getFontSize();
+        float X = myTextPositions.get(0).getX();
         for (int j = 0; j < myTextPositions.size(); j++) {
             MyTextPosition myTextPosition = myTextPositions.get(j);
+
             if(myTextPosition.getId() != before) {
                 System.out.println("");
                 before = myTextPosition.getId();
+                chuckWordList.add(new MyTextPosition(fontSize, X, sameLineTextString));
+                sameLineTextString = "";
+                fontSize = myTextPosition.getFontSize();
+                X = myTextPosition.getX();
             }
-
+            
             System.out.print(myTextPosition.text);
+            sameLineTextString += myTextPosition.text;
         }
+        chuckWordList.add(new MyTextPosition(fontSize,X, sameLineTextString));
+        System.out.println("====================");
+
+        for(int j=0; j<chuckWordList.size(); j++) {
+            // 공백만 있는 덩어리 제거
+            if(chuckWordList.get(j).getText().isBlank()) {
+                chuckWordList.remove(j);
+                j--;
+            }
+            // 숫자만 있는 덩어리 앞에 붙이고 제거
+            if(j>= 1 && isNumeric(chuckWordList.get(j).getText())) {
+
+                chuckWordList.set(j-1,
+                        new MyTextPosition(chuckWordList.get(j-1).getFontSize(),
+                                chuckWordList.get(j-1).getX(),
+                                chuckWordList.get(j-1).getText().concat(" " + chuckWordList.get(j).getText())));
+                chuckWordList.remove(j);
+                j--;
+            }
+        }
+        
+        for(int j=0; j<chuckWordList.size(); j++) {
+            System.out.println("chuckWordList.get("+ j +") = ["+ chuckWordList.get(j).getFontSize() + " "+
+                    chuckWordList.get(j).getX() +  "]: " +
+                    chuckWordList.get(j).getText());
+        }
+
         System.out.println("xMin = " + xMin + "/" + xMax);
+    }
+    public static boolean isNumeric(String text) {
+        text = text.replaceAll("(^\\p{Z}+|\\p{Z}+$)", "");
+
+        try {
+            int extractInt = Integer.parseInt(text);
+        }
+        catch (NumberFormatException e) {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean isDate(String input) {
+
+        String regex = ".*[0-9]{2,4}.[0-9]{1,2}.[0-9]{1,2}.*";
+        if(input.matches(regex)) {
+            return true;
+        }else {
+            return false;
+        }
+
     }
 
     @Test
