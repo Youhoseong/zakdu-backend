@@ -1,21 +1,16 @@
 package capstone.jakdu.ocrtest;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.rendering.ImageType;
-import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 import org.junit.jupiter.api.Test;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -23,18 +18,8 @@ import java.util.List;
 
 
 public class ocrexample {
-
-    @AllArgsConstructor
-    @Getter
-    private class MyTextPosition {
-        private float x;
-        private float y;
-        private float endX;
-        private float height;
-        private String text;
-        private int id;
-    }
-    static int id;
+    List<MyTextPosition> myTextPositions = new ArrayList<>();
+    static int id = 0;
     float xMin = 999;
     float xMax = 0;
     // 1열
@@ -109,7 +94,7 @@ public class ocrexample {
         }
     }
 
-    List<MyTextPosition> myTextPositions = new ArrayList<>();
+
 
     PDFTextStripper reader = new PDFTextStripper() {
         boolean startOfLine = true;
@@ -127,13 +112,13 @@ public class ocrexample {
 
         @Override
         protected void writeString(String text, List<TextPosition> textPositions) throws IOException {
-            byte[] b = text.getBytes("UTF-8");
+            byte[] b = text.getBytes(StandardCharsets.UTF_8);
             if(b[b.length-1] == 8)
                 b = Arrays.copyOfRange(b, 0, b.length - 1);
             else if(b[0] == 8 && b[1] == 8) {
                 b = Arrays.copyOfRange(b, 2, b.length);
             }
-            text = new String(b, "UTF-8");
+            text = new String(b, StandardCharsets.UTF_8);
             String tempText = text.replaceAll(" ", "");
             text = text.replaceAll("\\s+", " ");
             //text = text.replaceAll("\t")
