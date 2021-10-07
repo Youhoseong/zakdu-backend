@@ -11,10 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,32 +21,7 @@ public class ocrexample {
     static int id = 0;
     float xMin = 999;
     float xMax = 0;
-    // 1열
-    class MyTextPositionComparator implements Comparator<MyTextPosition> {
-        @Override
-        public int compare(MyTextPosition o1, MyTextPosition o2) {
-            if(Math.abs(o1.y - o2.y) < Math.min(o1.fontSize, o2.fontSize)) {
-                if(o1.x < o2.x) return -1;
-                else return 1;
-            }
-            else {
-                if(o1.y > o2.y) {
-                    return 1;
-                }
-                else if(o1.y < o2.y) {
-                    return -1;
-                }
-                else {
-                    if(o1.x <= o2.x) {
-                        return -1;
-                    }
-                    else {
-                        return 1;
-                    }
-                }
-            }
-        }
-    }
+
 
     class MyTextPositionComparatorMultiCol implements Comparator<MyTextPosition> {
         private float rowSize;
@@ -72,7 +44,7 @@ public class ocrexample {
              // o1과 o2가 같은 열에 있는 경우
             else{
                 // o1과 o2가 같은 행에 있는 경우
-                if(Math.abs(o1.y - o2.y) < Math.min(o1.fontSize, o2.fontSize)) {
+                if(Math.abs(o1.y - o2.y) < Math.min(o1.height, o2.height)) {
                     if(o1.x < o2.x) return -1;
                     else return 1;
                 }
@@ -127,6 +99,7 @@ public class ocrexample {
             text = text.replaceAll("\\s+", " ");
             //text = text.replaceAll("\t")
             if(tempText.contains("차례") ||
+                    tempText.contains("목차") ||
                     tempText.toLowerCase().contains("contents") ||
                     tempText.toLowerCase().contains("indd") ||
                     isDate(tempText)  ) {
@@ -134,20 +107,23 @@ public class ocrexample {
                 System.out.println("[차례]text = " + text);
                 return;
             }
-            TextPosition first = textPositions.get(0);
-            TextPosition last = textPositions.get(text.length() - 1);
+
 
 
             for (int i = 0; i < text.length(); i++) {
                 TextPosition t = textPositions.get(i);
-                xMax = Math.max(xMax, textPositions.get(i).getEndX());
-                xMin = Math.min(xMin, textPositions.get(i).getX());
-                System.out.println("" + text.substring(i, i + 1) + "/" + t.getX() + "/" + t.getEndX());
-                myTextPositions.add(new MyTextPosition(t.getX(), t.getY(), t.getEndX(), t.getFontSizeInPt(), text.substring(i, i + 1), id));
+                if(t.getX() < 0 || t.getY() < 0) {
+                    continue;
+                }
+
+                xMax = Math.max(xMax, t.getEndX());
+                xMin = Math.min(xMin, t.getX());
+                System.out.println("" + text.substring(i, i + 1) + "/" + t.getX() + "/" + t.getY());
+                myTextPositions.add(new MyTextPosition(t.getX(), t.getY(), t.getEndX(), t.getFontSizeInPt(), t.getHeight(), text.substring(i, i + 1), id));
             }
             id++;
 //            System.out.println("text = " + text + "/" + first.getX() + "/" + first.getY() + "/" + last.getEndX() + "/" + last.getHeight());
-//            System.out.println("text = " + text);
+            System.out.println("text = " + text);
 
             //myTextPositions.add(new MyTextPosition(first.getX(), first.getY(), last.getEndX(), last.getHeight(),text));
             if (startOfLine)
@@ -156,7 +132,7 @@ public class ocrexample {
                 //myTextPositions.add(new MyTextPosition(t.getX() - 0.1f, t.getY(), t.getEndX(), t.getHeight(), "@"));
 
                 TextPosition firstPosition = textPositions.get(0);
-                writeString(String.format("[%s %s %s]", firstPosition.getFontSizeInPt(),firstPosition.getXDirAdj(), firstPosition.getYDirAdj()));
+                writeString(String.format("[%s %s %s %s]", firstPosition.getFontSizeInPt(),firstPosition.getHeight(), firstPosition.getXDirAdj(), firstPosition.getYDirAdj()));
                 startOfLine = false;
             }
             super.writeString(text, textPositions);
@@ -199,26 +175,6 @@ public class ocrexample {
         System.out.println(pageText);
     }
 
-    @Test
-    public void get1ColPageExtract() throws IOException {
-        String fileName = "아샘HiMath기하.pdf";
-        File source = new File(fileName);
-        PDDocument pdfDoc = PDDocument.load(source);
-        int i=4; // page no.
-
-        System.out.println("separate:" + reader.getLineSeparator());
-        reader.setStartPage(i);
-        reader.setEndPage(i);
-
-        String pageText = reader.getText(pdfDoc);
-        //System.out.println(pageText);
-        System.out.println("===========");
-        myTextPositions.sort(new MyTextPositionComparator());
-        myTextPositions.forEach(myTextPosition -> {
-            System.out.println("myTextPosition.text = " + myTextPosition.text);
-        });
-    }
-
     /**
      * @throws IOException
      * 테스트하려면 이 메소드 돌려보면 됩니다.
@@ -227,7 +183,7 @@ public class ocrexample {
      */
     @Test
     public void getMultiColPageExtract() throws IOException {
-        String fileName = "2020자이스토리고2수학Ⅰ.pdf";
+        String fileName = "지학_풍산자반복수학_수학(상)_본문(학생용).pdf";
         File source = new File(fileName);
         PDDocument pdfDoc = PDDocument.load(source);
         int i=4; // page no.
@@ -239,8 +195,21 @@ public class ocrexample {
         System.out.println(pageText);
         System.out.println("===========");
         System.out.println("xMax, xMin :" + xMax+ " " + xMin);
-        myTextPositions.sort(new MyTextPositionComparatorMultiCol(xMax - xMin, 3));
+        myTextPositions.sort(new MyTextPositionComparatorMultiCol(xMax - xMin, 1));
         int before = myTextPositions.get(0).getId();
+
+        int id = 0;
+        myTextPositions.get(0).setId(id);
+        for(int j = 1; j < myTextPositions.size(); j++) {
+            MyTextPosition prev = myTextPositions.get(j - 1);
+            MyTextPosition here = myTextPositions.get(j);
+            if (Math.abs(prev.getY() - here.getY()) < Math.min(prev.getHeight(), here.getHeight())) {
+                here.setId(id);
+            }
+            else {
+                here.setId(++id);
+            }
+        }
 
         String sameLineTextString = "";
         List<MyTextPosition> chuckWordList = new ArrayList<>();
@@ -270,16 +239,7 @@ public class ocrexample {
                 chuckWordList.remove(j);
                 j--;
             }
-            // 숫자만 있는 덩어리 앞에 붙이고 제거
-            if(j>= 1 && isNumeric(chuckWordList.get(j).getText())) {
 
-                chuckWordList.set(j-1,
-                        new MyTextPosition(chuckWordList.get(j-1).getFontSize(),
-                                chuckWordList.get(j-1).getX(),
-                                chuckWordList.get(j-1).getText().concat(" " + chuckWordList.get(j).getText())));
-                chuckWordList.remove(j);
-                j--;
-            }
         }
         
         for(int j=0; j<chuckWordList.size(); j++) {
@@ -289,7 +249,82 @@ public class ocrexample {
         }
 
         System.out.println("xMin = " + xMin + "/" + xMax);
+
+        /** 목차의 계층구조 파악하기 **/
+        // fontsize, 접두어 번호, 계층
+
+        Map<Integer, Map<Integer, Integer>> hierarchyDB = new HashMap<>();
+        List<Integer> hierarchyMap = new ArrayList<>(); // [index] = 계층 번호
+        // 같은 열: 폰트사이즈 다른 경우 -> 구분 가능 / [같은 경우 -> 시작 위치]
+        // 같은 폰트 사이즈 중에서, 접두어 유형에 해당하는 계층 번호 key -> fontSize + 접두어 유형
+
+        float currentfontSize = chuckWordList.get(0).getFontSize();
+
+        for(int j = 0; j < chuckWordList.size(); j++) {
+            String text = chuckWordList.get(j).getText();
+            int hierarchyNumber = getPrefixNum(text);
+            System.out.println("[hierarchyNumber]: " + hierarchyNumber + "/ " + text);
+            chuckWordList.get(j).setPrefixId(hierarchyNumber);
+        }
+
+        System.out.println();
+
+        for(int j = 0; j < chuckWordList.size()-1; j++) {
+            MyTextPosition myTextPosition = chuckWordList.get(j);
+            MyTextPosition nextTextPosition = chuckWordList.get(j+1);
+            // 접두어가 혼자있을때
+            if(isAllTextIsPrefix(myTextPosition.getText(), myTextPosition.getPrefixId())) {
+                // 텍스ㅌ
+                if(nextTextPosition.getPrefixId() == 10) {
+                        chuckWordList.set(j+1,
+                                new MyTextPosition(chuckWordList.get(j).getFontSize(),
+                                        chuckWordList.get(j).getX(),
+                                        chuckWordList.get(j).getText().concat(" " + chuckWordList.get(j+1).getText())));
+
+                        chuckWordList.get(j+1).setPrefixId(chuckWordList.get(j).getPrefixId());
+                        chuckWordList.remove(j);
+                }
+            }
+
+
+        }
+
+        for(int j = 0; j < chuckWordList.size(); j++) {
+            String text = chuckWordList.get(j).getText();
+            int hierarchyNumber = getPrefixNum(text);
+            System.out.println("[hierarchyNumber]: " + hierarchyNumber + "/ " + text);
+            chuckWordList.get(j).setPrefixId(hierarchyNumber);
+        }
+
+
     }
+    public static boolean isAllTextIsPrefix(String text, int prefixId) {
+        text = text.replaceAll("(^\\p{Z}+|\\p{Z}+$)", "");
+
+        switch (prefixId) {
+            case 0:
+                return text.matches("^[0-9]{2}$");
+            case 1:
+                return text.matches("^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII)$");
+        }
+        return false;
+    }
+
+    public static int getPrefixNum(String text) {
+        text = text.replaceAll("(^\\p{Z}+|\\p{Z}+$)", "");
+
+        if(text.matches("^[0-9]{2}.*$")) {
+            return 0;
+        }
+        else if(text.matches("^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII).*$")) {
+            return 1;
+        }
+        else { // 접두어가 없을 때
+            return 10;
+        }
+
+    }
+
     public static boolean isNumeric(String text) {
         text = text.replaceAll("(^\\p{Z}+|\\p{Z}+$)", "");
 
@@ -320,26 +355,82 @@ public class ocrexample {
         String s = new String(b, "UTF-8");
         System.out.println("s = " + s);
     }
-//    @Test
-//    public void tesseractTest() throws TesseractException, IOException {
-//        Tesseract tesseract = new Tesseract();
-//        tesseract.setDatapath("C:/Program Files/Tesseract-OCR/tessdata");
-//        tesseract.setLanguage("kor");
-//        String fileName = "일등급수학I.pdf";
-//        String filePath = System.getProperty("user.dir") + "/"+ fileName;
-//        File source = new File(filePath);
-//        PDDocument pdfDoc = PDDocument.load(source);
-//
-//        PDFRenderer pdfRenderer = new PDFRenderer(pdfDoc);
-//        for (int page = 3; page < 4; page++) {
-//            BufferedImage bufferedImage = pdfRenderer.renderImageWithDPI(page, 1000, ImageType.GRAY);
-//
-//            String str = tesseract.doOCR(bufferedImage);
-//            System.out.println(str);
-//
-//        }
 
-        //String text = tesseract.doOCR(source);
-        //System.out.print(text);
-//    }
+    /**                        ^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$
+     * I, II, III ... => 정규식 ^[I, II, III, IV, V, VI, VII, VIII, IX, X, XI, XII].*$
+     * 1, 2, 3, 4 ....... => 정규식   ^[1-9].*$
+     * 01, 02, 03 ... => 정규식        ^\d{2}.*$
+     * A, B, C, D ...                ^[A-Z].*$
+     * 가, 나, 다,                     ^[가,나,다,라,마,바,사,아,자,차,카,타,파,하].*$
+     * 유형 01, 유형 02, 유형 03, 유형 04 ...   ^[유][형]\s\d{2}.*$
+     * •, ●    ^[•, ●]$
+     *  첫째, 둘째, 셋째 ... ^[첫, 둘, 셋, 넷, 다섯, 여섯, 일곱, 여덟, 아홉, 열]째.*$
+     * chapter 1, chapter 2, chapter 3 ...I, II, III ... ^[c][h][a][p][t][e][r]\s\d$
+     *  1. ~~~~
+     *   1[-, ., _]1.~~~
+     *   1-2.~~
+     *  자신 = i
+     * part 1, part 2, part 3 ...I, II, III ...
+     * 1장, 2장, 3장 ...
+     * appendix 1, appendix 2, appendix 3 ...I, II, III ...
+     * section 1 section 2, section 3 ...I, II, III ...
+     * case 1, case 2, case 3 ...I, II, III ...
+     *
+     *
+     * h = 계층의 history 저장하는 Map
+     * if fontSize[i-1] > fontSize[i] then 상위의 child, h map에 추가
+     * elif fontSize[i-1] < fontSize[i] then h map 내부에서 찾기
+     * else
+     *      if x[i-1] < x[i] then 상위의 child
+     *      elif x[i-1] > x[i] then 자신과 폰트 + 위치가 동일한 곳 찾기
+     *      else then 자신과 같은 위치
+     **/
+
+   /**
+     *
+     * 1-13
+     * 1. (교사용) 2022 수능특강 / 가능
+     * 2.  [2018년개정] 개념원리~ / 가능
+     * 3. [올림포스고난도]수학 스캔본 / 가능은 해보임
+     * 4.  [유형필수]2019pdf해결의 법칙 /가능    *
+     * 5. [unlocked]2020 자이스토리 / 애매함 *
+     * 6. 02-1개념원리RPM / 가능
+     * 7. 수력충전 / 가능
+     * 8. 18짱중요한_수학 / 가능
+     * 9. 2015개정중등수학3-1수력충전 / 불가해보임
+     * 10. 2015개정중등수학3-2 ㅎ념플러~ / 불가해보임
+     * 11. 2020자이스토리고2수학I / 애매함
+     * 12. 2020짱중요한유형확률과통계 / 될듯한데 살짝 애매해보임
+     * 13. 2021알피엠3_1 / 가능해보이는데 애매함
+     *
+     * 아샘HiMath기하 / 가능
+     * 일등급수학I / 가능
+     * 지학_풍산자반복수학_수학(상)_본문(학생용) / 가능
+     * 짱쉬운유형 / 가능
+     * 텐투_고등수학(하)_본문 / 가능
+     * 풍산자반복수학중2-1본문 / 가능
+     * Informationselfbook1(정보책) / 가능
+     * RPM기하 / 가능
+     *
+     * 풍산자라이가확률과통계본문 / 불가
+     * EBS2020학년도수능완성수학가형 / 불가
+     * EBS2020학년도수능완성수학나형 / 불가
+     * 중 1 중학 연산 1권 / 불가
+     *
+     *1. 4-7 불가
+     * 2. 9종시크릿교과서 가능
+     * 3. 개념원리수학하 가능
+     * 4. 개념플러스유형수학2유형편 가능
+     * 5. 고_미적분(홍성복)_지도서 불가능
+     * 6. 고등_수학)개념플러스유형_확률과통계-개념편 애매
+     * 7. 고등_수학)개념플러스유형_확률과통계-유형편
+     * 8. 지학사 미적분 교사용 교과서 가능
+     * 9. 수학의힘감마중1-1 가능
+     * 10. 수학의힘베타중1-1 가능
+     * 11. 수학의힘알파중1-1 가능
+     * 12. 숨마쿰라우데고등스타트업(상) 가능 / 스캔본
+     * 13. 수학의 바이블 가능 / 한글깨짐
+     *
+     * 백에 공백 지워야함!!!!
+     *     */
 }
