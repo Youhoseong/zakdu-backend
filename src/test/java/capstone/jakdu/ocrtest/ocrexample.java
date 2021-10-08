@@ -306,6 +306,18 @@ public class ocrexample {
                 return text.matches("^[0-9]{2}$");
             case 1:
                 return text.matches("^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII)$");
+            case 2:
+                return text.matches("^[1-9]$");
+            case 3:
+                return text.matches("^[A-Z]$");
+            case 4:
+                return text.matches("^(가|나|다|라|마|바|사|아|자|차|카|타|파|하)$");
+            case 5:
+                return text.matches("^(유형)\\d{2}$");
+            case 6:
+                return text.matches("^(•|●)$");
+            case 7:
+                return text.matches("^(첫|둘|셋|넷|다섯|여섯|일곱|여덟|아홉|열)째$");
         }
         return false;
     }
@@ -313,15 +325,25 @@ public class ocrexample {
     public static int getPrefixNum(String text) {
         text = text.replaceAll("(^\\p{Z}+|\\p{Z}+$)", "");
 
-        if(text.matches("^[0-9]{2}.*$")) {
+        if(text.matches("^[0-9]{2}.*$"))
             return 0;
-        }
-        else if(text.matches("^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII).*$")) {
+        else if(text.matches("^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII).*$"))
             return 1;
-        }
-        else { // 접두어가 없을 때
+        else if(text.matches("^[1-9].*$"))
+            return 2;
+        else if(text.matches("^[A-Z].*$"))
+            return 3;
+        else if(text.matches("^(가|나|다|라|마|바|사|아|자|차|카|타|파|하).*$"))
+            return 4;
+        else if(text.matches("^(유형)\\d{2}.*$"))
+            return 5;
+        else if(text.matches("^(•|●).*$"))
+            return 6;
+        else if(text.matches("^(첫|둘|셋|넷|다섯|여섯|일곱|여덟|아홉|열)째.*$"))
+            return 7;
+        else  // 접두어가 없을 때
             return 10;
-        }
+
 
     }
 
@@ -361,22 +383,24 @@ public class ocrexample {
      * 1, 2, 3, 4 ....... => 정규식   ^[1-9].*$
      * 01, 02, 03 ... => 정규식        ^\d{2}.*$
      * A, B, C, D ...                ^[A-Z].*$
-     * 가, 나, 다,                     ^[가,나,다,라,마,바,사,아,자,차,카,타,파,하].*$
-     * 유형 01, 유형 02, 유형 03, 유형 04 ...   ^[유][형]\s\d{2}.*$
-     * •, ●    ^[•, ●]$
-     *  첫째, 둘째, 셋째 ... ^[첫, 둘, 셋, 넷, 다섯, 여섯, 일곱, 여덟, 아홉, 열]째.*$
-     * chapter 1, chapter 2, chapter 3 ...I, II, III ... ^[c][h][a][p][t][e][r]\s\d$
+     * 가, 나, 다,                     ^(가|나|다|라|마|바|사|아|자|차|카|타|파|하).*$
+     * 유형 01, 유형 02, 유형 03, 유형 04 ...   ^(유형)\d{2}.*$
+     * •, ●                              ^(•|●).*$
+     *  첫째, 둘째, 셋째 ... ^(첫|둘|셋|넷|다섯|여섯|일곱|여덟|아홉|열)째.*$
+     * chapter 1, chapter 2, chapter 3 ...I, II, III ... ^(?i)chapter.*$
      *  1. ~~~~
-     *   1[-, ., _]1.~~~
+     *   1[-, ., _] ...                         ^\d((-|.|_)\d)+.*$
      *   1-2.~~
      *  자신 = i
-     * part 1, part 2, part 3 ...I, II, III ...
-     * 1장, 2장, 3장 ...
-     * appendix 1, appendix 2, appendix 3 ...I, II, III ...
-     * section 1 section 2, section 3 ...I, II, III ...
-     * case 1, case 2, case 3 ...I, II, III ...
+     * part 1, part 2, part 3 ...I, II, III ...     ^(?i)part\d.*$
+     * 1장, 2장, 3장 ...                                   ^\d장.*$
+     * appendix 1, appendix 2, appendix 3 ...I, II, III ... ^(?i)appendix.*$
+     * section 1 section 2, section 3 ...I, II, II ... ^(?i)section.*$
+     * case 1, case 2, case 3 ...I, II, III ...         ^(?i)case.*
      *
-     *
+     * 1, 2, 3 순차적 / charper, 장 고정적
+     * 순차적 | 순차적 + 고정적 | 고정적 + 순차적
+     * 
      * h = 계층의 history 저장하는 Map
      * if fontSize[i-1] > fontSize[i] then 상위의 child, h map에 추가
      * elif fontSize[i-1] < fontSize[i] then h map 내부에서 찾기
