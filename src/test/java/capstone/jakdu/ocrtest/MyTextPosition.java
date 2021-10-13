@@ -32,5 +32,6 @@ public class MyTextPosition {
     String text;
     int id;
     int prefixId;
+    int hierarchyNum;
 
 }
