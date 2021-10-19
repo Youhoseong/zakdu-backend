@@ -24,14 +24,14 @@ public class MyTextPosition {
         this.id = id;
     }
 
-    float x;
-    float y;
-    float endX;
-    float fontSize;
-    float height;
-    String text;
-    int id;
-    int prefixId;
-    int hierarchyNum;
+    private float x;
+    private float y;
+    private float endX;
+    private float fontSize;
+    private float height;
+    private String text;
+    private int id;
+    private int prefixId;
+    private int hierarchyNum;
 
 }

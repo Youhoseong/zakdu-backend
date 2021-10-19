@@ -1,191 +1,21 @@
 package capstone.jakdu.ocrtest;
 
 
+import capstone.jakdu.refactoring.MyPDFTextStripper;
+import capstone.jakdu.refactoring.MyTextPositionComparatorMultiCol;
+import capstone.jakdu.refactoring.Regex;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.text.PDFTextStripper;
-import org.apache.pdfbox.text.TextPosition;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
 public class ocrexample {
-    List<MyTextPosition> myTextPositions = new ArrayList<>();
-    static int id = 0;
-    float xMin = 999;
-    float xMax = 0;
-    float contentsY = 0;
-
-    class MyTextPositionComparatorMultiCol implements Comparator<MyTextPosition> {
-        private final float rowSize;
-        public MyTextPositionComparatorMultiCol(float pageWidth, int colNum) {
-            rowSize = pageWidth / colNum;
-        }
-
-        @Override
-        public int compare(MyTextPosition o1, MyTextPosition o2) {
-            // o1과 o2가 서로 다른 열에 있는 경우
-            int r1 = (int) ((o1.x - xMin) / rowSize);
-            int r2 = (int) ((o2.x - xMin) / rowSize);
-
-            if(r1 < r2) {
-                return -1;
-            }
-            else if(r1 > r2) {
-                return 1;
-            }
-             // o1과 o2가 같은 열에 있는 경우
-            else{
-                // o1과 o2가 같은 행에 있는 경우
-                if(Math.abs(o1.y - o2.y) < Math.min(o1.height, o2.height)) {
-                    if(o1.x < o2.x) return -1;
-                    else if(o1.x == o2.x) return 0;
-                    else return 1;
-                }
-                else {
-                    if(o1.y > o2.y) {
-                        return 1;
-                    }
-                    else if(o1.y < o2.y) {
-                        return -1;
-                    }
-                    else { //o1.y = o2.y
-                        if(o1.x < o2.x) {
-                            return -1;
-                        }
-                        else if(o1.x == o2.x) {
-                            return 0;
-                        }
-                        else {
-                            return 1;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
-
-    PDFTextStripper reader = new PDFTextStripper() {
-        boolean startOfLine = true;
-        @Override
-        protected void startPage(PDPage page) throws IOException {
-            startOfLine = true;
-            super.startPage(page);
-        }
-
-        @Override
-        protected void writeLineSeparator() throws IOException {
-            startOfLine = true;
-            super.writeLineSeparator();
-
-        }
-
-        @Override
-        protected void writeString(String text, List<TextPosition> textPositions) throws IOException {
-            byte[] b = text.getBytes(StandardCharsets.UTF_8);
-            if(b[b.length-1] == 8)
-                b = Arrays.copyOfRange(b, 0, b.length - 1);
-            else if(b[0] == 8 && b[1] == 8) {
-                b = Arrays.copyOfRange(b, 2, b.length);
-            }
-            text = new String(b, StandardCharsets.UTF_8);
-            String tempText = text.replaceAll(" ", "");
-
-            text = text.replaceAll("(\\s| )+", " ");
-            //text = text.replaceAll("\t")
-
-            // 쓸데없는 값 제거
-            // 차례, 목차, contents
-            // indd, 날짜 형식
-            if(tempText.matches("(\\s| )+")) {
-                return;
-            }
-            else if(tempText.contains("차례") ||
-                    tempText.contains("목차") ||
-                    tempText.toLowerCase().contains("contents")
-                     ) {
-
-                contentsY = textPositions.get(0).getY();
-                System.out.println("[차례]text = " + text);
-                return;
-            } else if(tempText.toLowerCase().contains("indd") || isDate(tempText)) {
-                return;
-            }
-
-            // Y 좌표 기준으로 제거
-            if(contentsY != 0 && textPositions.get(0).getY() <= contentsY) {
-                return;
-            }
-
-
-            for (int i = 0; i < text.length(); i++) {
-                TextPosition t;
-                t = textPositions.get(i);
-
-                if(t.getX() < 0 || t.getY() < 0) {
-                    continue;
-                }
-
-                xMax = Math.max(xMax, t.getEndX());
-                xMin = Math.min(xMin, t.getX());
-                System.out.println("" + text.substring(i, i + 1) + "/" + t.getX() + "/" + t.getY());
-                myTextPositions.add(new MyTextPosition(t.getX(), t.getY(), t.getEndX(), t.getFontSizeInPt(), t.getHeight(), text.substring(i, i + 1), id));
-            }
-            TextPosition t = textPositions.get(text.length() - 1);
-            myTextPositions.add(new MyTextPosition(t.getX(), t.getY(), t.getEndX(), t.getFontSizeInPt(), t.getHeight(), " ", id));
-            id++;
-//            System.out.println("text = " + text + "/" + first.getX() + "/" + first.getY() + "/" + last.getEndX() + "/" + last.getHeight());
-            System.out.println("text = " + text);
-
-            //myTextPositions.add(new MyTextPosition(first.getX(), first.getY(), last.getEndX(), last.getHeight(),text));
-            if (startOfLine)
-            {
-                //myTextPositions.add(new MyTextPosition(t.getX() - 0.1f, t.getY(), t.getEndX(), t.getHeight(), "@"));
-
-                TextPosition firstPosition = textPositions.get(0);
-                writeString(String.format("[%s %s %s %s]", firstPosition.getFontSizeInPt(),firstPosition.getHeight(), firstPosition.getXDirAdj(), firstPosition.getYDirAdj()));
-                startOfLine = false;
-            }
-            super.writeString(text, textPositions);
-        }
-
-    };
+    MyPDFTextStripper reader = new MyPDFTextStripper();
 
     public ocrexample() throws IOException {
-    }
-
-    @Test
-    public void getAllPageExtractPDF() throws IOException {
-        String fileName = "example-페이지-4.pdf";
-        String filePath = System.getProperty("user.dir") + "/"+ fileName;
-        File source = new File(filePath);
-        PDDocument pdfDoc = PDDocument.load(source);
-        String text = reader.getText(pdfDoc);
-        System.out.println(text);
-
-    }
-    
-    @Test
-    public void getSomePageExtractPDF() throws IOException {
-
-        String fileName = "9종교과서시크릿수학1-본문(학생용).pdf";
-        File source = new File(fileName);
-        PDDocument pdfDoc = PDDocument.load(source);
-        int i=2;
-
-        System.out.println("separate:" + reader.getLineSeparator());
-
-        reader.setStartPage(i);
-        reader.setEndPage(i);
-        String pageText = reader.getText(pdfDoc);
-        System.out.println(pageText);
     }
 
     /**
@@ -199,9 +29,9 @@ public class ocrexample {
      */
     @Test
     public void getMultiColPageExtract() throws IOException {
-        String fileName = "gg.pdf";
-        int i = 14; // page no.
-        int colNum = 1;
+        String fileName = "2020자이스토리고2수학Ⅰ.pdf";
+        int i = 4; // page no.
+        int colNum = 3;
 
         File source = new File(fileName);
         PDDocument pdfDoc = PDDocument.load(source);
@@ -209,14 +39,228 @@ public class ocrexample {
         System.out.println("separate:" + reader.getLineSeparator());
         reader.setStartPage(i);
         reader.setEndPage(i);
-
         String pageText = reader.getText(pdfDoc);
+        List<MyTextPosition> myTextPositions = reader.getMyTextPositions();
+
         System.out.println(pageText);
         System.out.println("===========");
-        System.out.println("xMax, xMin :" + xMax+ " " + xMin);
-        myTextPositions.sort(new MyTextPositionComparatorMultiCol(xMax - xMin, colNum));
-        int before = myTextPositions.get(0).getId();
+        System.out.println("xMax, xMin :" + reader.getXMax()+ " " + reader.getXMin());
 
+        myTextPositions.sort(new MyTextPositionComparatorMultiCol(reader.getXMax() - reader.getXMin(), colNum, reader.getXMin()));
+   
+
+
+        // 같은 행 판단 start
+        setLineNumber(myTextPositions);
+        // 문자열로 묶기
+        List<MyTextPosition> chunkWordList = joinSameLineCharact(myTextPositions);
+
+        for(int j=0; j<chunkWordList.size(); j++) {
+            System.out.println("chunkWordList.get("+ j +") = ["+ chunkWordList.get(j).getFontSize() + " "+
+                    chunkWordList.get(j).getX() +  "]: " +
+                    chunkWordList.get(j).getText());
+        }
+
+        deleteEmptyChunk(chunkWordList);
+
+        joinSeperatedPrefixAndPageNumber(chunkWordList);
+
+
+        /** 목차의 계층구조 파악하기 **/
+
+        // fontsize, 접두어 번호, 계층
+
+        // 같은 열: 폰트사이즈 다른 경우 -> 구분 가능 / [같은 경우 -> 시작 위치]
+        // 같은 폰트 사이즈 중에서, 접두어 유형에 해당하는 계층 번호 key -> fontSize + 접두어 유형
+
+        Map<HierarchyData, Boolean> pageExistDB = getPageExist(chunkWordList);
+
+        joinSeperatedPageNumber(chunkWordList, pageExistDB);
+
+        setHierarchy(chunkWordList);
+        /**
+         *
+         *
+         * 2개 이상 공백을 한개로 변경 --> 텍스트 정렬 --> 모든 내용이 공백이면 제거 --> 접두어 파악
+         * --> 떨어진 접두어 붙이기 --> [계층파악 --> 페이지 t/f파악]
+         * 페이지 붙이는 근거
+         *
+         * **/
+
+        for(int j = 0; j < chunkWordList.size(); j++) {
+            MyTextPosition chuckWord = chunkWordList.get(j);
+            String text = chuckWord.getText();
+            int hierarchyNumber = chuckWord.getHierarchyNum();
+            int prefixNumber = chuckWord.getPrefixId();
+            HierarchyData hierarchyData = new HierarchyData(chuckWord.getFontSize(), chuckWord.getPrefixId());
+            Boolean pageExist = pageExistDB.get(hierarchyData);
+            System.out.println("[isPageExist, hierarchyNum, prefixNum]:" + pageExist + "/ " + hierarchyNumber + "/ "+prefixNumber + "/ " + text);
+        }
+    }
+
+    private void joinSeperatedPageNumber(List<MyTextPosition> chunkWordList, Map<HierarchyData, Boolean> pageExistDB) {
+        for(int j = 0; j < chunkWordList.size()-1; j++) {
+            MyTextPosition chuckWord = chunkWordList.get(j);
+            MyTextPosition nextChuckWord = chunkWordList.get(j+1);
+            HierarchyData hierarchyData = new HierarchyData(chuckWord.getFontSize(), chuckWord.getPrefixId());
+            if(pageExistDB.get(hierarchyData) && !Regex.hasPageNum(chuckWord.getText())) {
+                if(nextChuckWord.getPrefixId() == 10 && Regex.hasPageNum(nextChuckWord.getText())) {
+                    chuckWord.setText(chuckWord.getText() + " " + nextChuckWord.getText());
+                    chunkWordList.remove(j+1);
+                }
+            }
+        }
+    }
+
+    private void setHierarchy(List<MyTextPosition> chunkWordList) {
+        int hierarchyNum = 0;
+        Map<HierarchyData, Integer> hierarchyDB = new HashMap<>();
+
+        for(int j = 0; j < chunkWordList.size(); j++) {
+            MyTextPosition chunkWord = chunkWordList.get(j);
+
+            HierarchyData hierarchyData = new HierarchyData(chunkWord.getFontSize(), chunkWord.getPrefixId());
+            Integer hNum = hierarchyDB.get(hierarchyData);
+            if(hNum == null) { // 1이 최상위 계층
+                hierarchyDB.put(hierarchyData, ++hierarchyNum);
+                hNum = hierarchyNum;
+            }
+
+            chunkWord.setHierarchyNum(hNum);
+        }
+
+    }
+
+    private Map<HierarchyData, Boolean> getPageExist(List<MyTextPosition> chunkWordList) {
+        Map<HierarchyData, Boolean> pageExistDB = new HashMap<>();
+
+        for(int j = 0; j < chunkWordList.size(); j++) {
+            MyTextPosition chuckWord = chunkWordList.get(j);
+            HierarchyData hierarchyData = new HierarchyData(chuckWord.getFontSize(), chuckWord.getPrefixId());
+
+            Boolean pageExist = pageExistDB.get(hierarchyData);
+            boolean hasPage = Regex.hasPageNum(chuckWord.getText());
+            if(pageExist == null) {
+                pageExistDB.put(hierarchyData, hasPage);
+            }
+            else {
+                if(hasPage && !pageExistDB.get(hierarchyData)) {
+                    pageExistDB.put(hierarchyData, true) ;
+                }
+            }
+        }
+        return pageExistDB;
+    }
+
+    private void joinSeperatedPrefixAndPageNumber(List<MyTextPosition> chunkWordList) {
+        for(int j = 0; j < chunkWordList.size(); j++) {
+            String text = chunkWordList.get(j).getText();
+            int prefixNumber = Regex.getPrefixNum(text);
+            System.out.println("[prefixNumber]: " + prefixNumber + "/ " + text);
+            chunkWordList.get(j).setPrefixId(prefixNumber);
+        }
+
+        int oneDigitNumberPrefixCount = 0;
+        int twoDigitNumberPrefixCount = 0;
+
+        for(int j = 0; j < chunkWordList.size()-1; j++) {
+            MyTextPosition myTextPosition = chunkWordList.get(j);
+            MyTextPosition nextTextPosition = chunkWordList.get(j+1);
+
+            int currentPrefixId = myTextPosition.getPrefixId();
+
+            if(currentPrefixId == 2)
+                oneDigitNumberPrefixCount++;
+            else if(currentPrefixId == 0)
+                twoDigitNumberPrefixCount++;
+
+            // 접두어가 혼자있을때
+            if(Regex.isAllTextIsPrefix(myTextPosition.getText(), myTextPosition.getPrefixId())) {
+                boolean flag = false;
+
+                if(currentPrefixId == 2) {
+                    // string을 숫자로 바꿔
+                    int num = Integer.parseInt(myTextPosition.getText());
+                    if(oneDigitNumberPrefixCount != Integer.parseInt(myTextPosition.getText())) {
+                        oneDigitNumberPrefixCount--;
+                        flag = true;
+                    }else if(num == 1 && oneDigitNumberPrefixCount != 1){
+                        oneDigitNumberPrefixCount = 1;
+                    }
+
+                }
+                else if(currentPrefixId == 0) {
+                    int num = Integer.parseInt(myTextPosition.getText());
+                    if(twoDigitNumberPrefixCount != num) {
+                        twoDigitNumberPrefixCount--;
+                        flag = true;
+                    }else if(num == 1 && twoDigitNumberPrefixCount != 1){
+                        twoDigitNumberPrefixCount = 1;
+                    }
+
+                }
+
+                if(!flag) {
+                    if (nextTextPosition.getPrefixId() == 10) {
+                        chunkWordList.set(j + 1,
+                                new MyTextPosition(chunkWordList.get(j).getFontSize(),
+                                        chunkWordList.get(j).getX(),
+                                        chunkWordList.get(j).getText().concat(" " + chunkWordList.get(j + 1).getText())));
+
+                        chunkWordList.get(j + 1).setPrefixId(chunkWordList.get(j).getPrefixId());
+                        chunkWordList.remove(j);
+                    }
+                }
+                else {
+                    chunkWordList.get(j).setPrefixId(10);
+                }
+            }
+        }
+    }
+
+    private void deleteEmptyChunk(List<MyTextPosition> chunkWordList) {
+        for(int j = 0; j< chunkWordList.size(); j++) {
+            // 공백만 있는 덩어리 제거
+            if(chunkWordList.get(j).getText().isBlank()) {
+                chunkWordList.remove(j);
+                j--;
+            } else {
+                chunkWordList.get(j).setText(
+                        chunkWordList.get(j).getText().trim()
+                );
+            }
+        }
+    }
+
+    private List<MyTextPosition> joinSameLineCharact(List<MyTextPosition> myTextPositions) {
+        String sameLineTextString = "";
+        int before = myTextPositions.get(0).getId();
+        List<MyTextPosition> chunkWordList = new ArrayList<>();
+        
+        float fontSize = myTextPositions.get(0).getFontSize();
+        float X = myTextPositions.get(0).getX();
+        for (int j = 0; j < myTextPositions.size(); j++) {
+            MyTextPosition myTextPosition = myTextPositions.get(j);
+
+            if(myTextPosition.getId() != before) {
+                System.out.println("");
+                before = myTextPosition.getId();
+                sameLineTextString = sameLineTextString.replaceAll("((\\.\\s){3,}|(\\.{3,}))","... ");
+                chunkWordList.add(new MyTextPosition(fontSize, X, sameLineTextString.replaceAll("(\\s| )+", " ")));
+                sameLineTextString = "";
+                fontSize = myTextPosition.getFontSize();
+                X = myTextPosition.getX();
+            }
+
+            System.out.print(myTextPosition.getText());
+            sameLineTextString += myTextPosition.getText();
+        }
+        sameLineTextString = sameLineTextString.replaceAll("((\\.\\s){3,}|(\\.{3,}))","... ");
+        chunkWordList.add(new MyTextPosition(fontSize,X, sameLineTextString.replaceAll("(\\s| )+", " ")));
+        return chunkWordList;
+    }
+
+    private void setLineNumber(List<MyTextPosition> myTextPositions) {
         int id = 0;
         myTextPositions.get(0).setId(id);
         MyTextPosition startChar = myTextPositions.get(0);
@@ -261,288 +305,6 @@ public class ocrexample {
         for(int k = tempStart; k < myTextPositions.size(); k++) {
             myTextPositions.get(k).setId(id);
         }
-
-        String sameLineTextString = "";
-        List<MyTextPosition> chuckWordList = new ArrayList<>();
-        float fontSize = myTextPositions.get(0).getFontSize();
-        float X = myTextPositions.get(0).getX();
-        for (int j = 0; j < myTextPositions.size(); j++) {
-            MyTextPosition myTextPosition = myTextPositions.get(j);
-
-            if(myTextPosition.getId() != before) {
-                System.out.println("");
-                before = myTextPosition.getId();
-                sameLineTextString = sameLineTextString.replaceAll("((\\.\\s){3,}|(\\.{3,}))","... ");
-                chuckWordList.add(new MyTextPosition(fontSize, X, sameLineTextString.replaceAll("(\\s| )+", " ")));
-
-                sameLineTextString = "";
-                fontSize = myTextPosition.getFontSize();
-                X = myTextPosition.getX();
-            }
-            
-            System.out.print(myTextPosition.text);
-            sameLineTextString += myTextPosition.text;
-        }
-        sameLineTextString = sameLineTextString.replaceAll("((\\.\\s){3,}|(\\.{3,}))","... ");
-        chuckWordList.add(new MyTextPosition(fontSize,X, sameLineTextString.replaceAll("(\\s| )+", " ")));
-        System.out.println("====================");
-
-        for(int j=0; j<chuckWordList.size(); j++) {
-            System.out.println("chuckWordList.get("+ j +") = ["+ chuckWordList.get(j).getFontSize() + " "+
-                    chuckWordList.get(j).getX() +  "]: " +
-                    chuckWordList.get(j).getText());
-        }
-
-        for(int j=0; j<chuckWordList.size(); j++) {
-            // 공백만 있는 덩어리 제거
-            if(chuckWordList.get(j).getText().isBlank()) {
-                chuckWordList.remove(j);
-                j--;
-            } else {
-                chuckWordList.get(j).setText(
-                        chuckWordList.get(j).getText().trim()
-                );
-            }
-
-        }
-
-
-
-        for(int j = 0; j < chuckWordList.size(); j++) {
-            String text = chuckWordList.get(j).getText();
-            int hierarchyNumber = getPrefixNum(text);
-            System.out.println("[hierarchyNumber]: " + hierarchyNumber + "/ " + text);
-            chuckWordList.get(j).setPrefixId(hierarchyNumber);
-        }
-
-        System.out.println();
-
-        int oneDigitNumberPrefixCount = 0;
-        int twoDigitNumberPrefixCount = 0;
-
-        for(int j = 0; j < chuckWordList.size()-1; j++) {
-            MyTextPosition myTextPosition = chuckWordList.get(j);
-            MyTextPosition nextTextPosition = chuckWordList.get(j+1);
-
-            int currentPrefixId = myTextPosition.getPrefixId();
-
-            if(currentPrefixId == 2)
-                oneDigitNumberPrefixCount++;
-            else if(currentPrefixId == 0)
-                twoDigitNumberPrefixCount++;
-
-            // 접두어가 혼자있을때
-            if(isAllTextIsPrefix(myTextPosition.getText(), myTextPosition.getPrefixId())) {
-                boolean flag = false;
-
-                if(currentPrefixId == 2) {
-                    // string을 숫자로 바꿔
-                    int num = Integer.parseInt(myTextPosition.getText());
-                    if(oneDigitNumberPrefixCount != Integer.parseInt(myTextPosition.getText())) {
-                        oneDigitNumberPrefixCount--;
-                        flag = true;
-                    }else if(num == 1 && oneDigitNumberPrefixCount != 1){
-                        oneDigitNumberPrefixCount = 1;
-                    }
-
-                }
-                else if(currentPrefixId == 0) {
-                    int num = Integer.parseInt(myTextPosition.getText());
-                    if(twoDigitNumberPrefixCount != num) {
-                        twoDigitNumberPrefixCount--;
-                        flag = true;
-                    }else if(num == 1 && twoDigitNumberPrefixCount != 1){
-                        twoDigitNumberPrefixCount = 1;
-                    }
-
-                }
-
-                if(!flag) {
-                    if (nextTextPosition.getPrefixId() == 10) {
-                        chuckWordList.set(j + 1,
-                                new MyTextPosition(chuckWordList.get(j).getFontSize(),
-                                        chuckWordList.get(j).getX(),
-                                        chuckWordList.get(j).getText().concat(" " + chuckWordList.get(j + 1).getText())));
-
-                        chuckWordList.get(j + 1).setPrefixId(chuckWordList.get(j).getPrefixId());
-                        chuckWordList.remove(j);
-                    }
-                }
-                else {
-                    chuckWordList.get(j).setPrefixId(10);
-                }
-            }
-
-        }
-
-
-        /** 목차의 계층구조 파악하기 **/
-
-        // fontsize, 접두어 번호, 계층
-
-        // 같은 열: 폰트사이즈 다른 경우 -> 구분 가능 / [같은 경우 -> 시작 위치]
-        // 같은 폰트 사이즈 중에서, 접두어 유형에 해당하는 계층 번호 key -> fontSize + 접두어 유형
-
-
-        Map<HierarchyData, Integer> hierarchyDB = new HashMap<>();
-        Map<HierarchyData, Boolean> pageExistDB = new HashMap<>();
-        int hierarchyNum = 0;
-
-
-
-        for(int j = 0; j < chuckWordList.size(); j++) {
-            MyTextPosition chuckWord = chuckWordList.get(j);
-
-            HierarchyData hierarchyData = new HierarchyData(chuckWord.getFontSize(), chuckWord.getPrefixId());
-            Integer hNum = hierarchyDB.get(hierarchyData);
-            boolean hasPage = hasPageNum(chuckWord.getText());
-            if(hNum == null) { // 1이 최상위 계층
-
-                hierarchyDB.put(hierarchyData, ++hierarchyNum);
-                pageExistDB.put(hierarchyData, hasPage);
-                hNum = hierarchyNum;
-            }
-            else {
-                if(hasPage && !pageExistDB.get(hierarchyData)) {
-                    pageExistDB.put(hierarchyData, true) ;
-                }
-            }
-
-            chuckWord.setHierarchyNum(hNum);
-        }
-        hierarchyDB.clear();
-        hierarchyNum = 0;
-        for(int j = 0; j < chuckWordList.size(); j++) {
-            MyTextPosition chuckWord = chuckWordList.get(j);
-
-            HierarchyData hierarchyData = new HierarchyData(chuckWord.getFontSize(), chuckWord.getPrefixId());
-            Integer hNum = hierarchyDB.get(hierarchyData);
-            if(hNum == null) { // 1이 최상위 계층
-
-                hierarchyDB.put(hierarchyData, ++hierarchyNum);
-                hNum = hierarchyNum;
-            }
-
-            chuckWord.setHierarchyNum(hNum);
-        }
-
-        for(int j = 0; j < chuckWordList.size()-1; j++) {
-            MyTextPosition chuckWord = chuckWordList.get(j);
-            MyTextPosition nextChuckWord = chuckWordList.get(j+1);
-            HierarchyData hierarchyData = new HierarchyData(chuckWord.getFontSize(), chuckWord.getPrefixId());
-            if(pageExistDB.get(hierarchyData) && !hasPageNum(chuckWord.getText())) {
-                if(nextChuckWord.getPrefixId() == 10 && hasPageNum(nextChuckWord.getText())) {
-                    chuckWord.setText(chuckWord.getText() + " " + nextChuckWord.getText());
-                    chuckWordList.remove(j+1);
-                }
-            }
-        }
-
-        /**
-         *
-         *
-         * 2개 이상 공백을 한개로 변경 --> 텍스트 정렬 --> 모든 내용이 공백이면 제거 --> 접두어 파악
-         * --> 떨어진 접두어 붙이기 --> [계층파악 --> 페이지 t/f파악]
-         * 페이지 붙이는 근거
-         *
-         * **/
-
-
-
-
-        for(int j = 0; j < chuckWordList.size(); j++) {
-            MyTextPosition chuckWord = chuckWordList.get(j);
-            String text = chuckWord.getText();
-            int hierarchyNumber = chuckWord.getHierarchyNum();
-            int prefixNumber = chuckWord.getPrefixId();
-            HierarchyData hierarchyData = new HierarchyData(chuckWord.getFontSize(), chuckWord.getPrefixId());
-            Boolean pageExist = pageExistDB.get(hierarchyData);
-            System.out.println("[isPageExist, hierarchyNum, prefixNum]:" + pageExist + "/ " + hierarchyNumber + "/ "+prefixNumber + "/ " + text);
-
-        }
-
-
-
-    }
-
-    public static boolean isAllTextIsPrefix(String text, int prefixId) {
-        text = text.replaceAll("\\s+", "");
-
-        switch (prefixId) {
-            case 0:
-                return text.matches("^[0-9]{2}$");
-            case 1:
-                return text.matches("^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|Ⅳ|Ⅲ)$");
-            case 2:
-                return text.matches("^[1-9]$");
-            case 3:
-                return text.matches("^[A-Z]$");
-            case 4:
-                return text.matches("^(가|나|다|라|마|바|사|아|자|차|카|타|파|하)$");
-            case 5:
-                return text.matches("^(유형)\\d{2}$");
-            case 6:
-                return text.matches("^(•|●)$");
-            case 7:
-                return text.matches("^(첫|둘|셋|넷|다섯|여섯|일곱|여덟|아홉|열)째$");
-        }
-        return false;
-    }
-
-    public static int getPrefixNum(String text) {
-        /** 모든 공백 1칸, 숫자 뒤에 점 또는 공백이 오는 거로 수정필요 **/
-        text = text.replaceAll("\\s+", " ");
-
-        if(text.matches("^[0-9]{2}((\\s|\\.).*)?$"))
-            return 0;
-        else if(text.matches("^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|Ⅰ|Ⅱ|Ⅲ|Ⅳ|Ⅴ|Ⅵ|Ⅶ|Ⅷ|Ⅸ|Ⅹ|Ⅺ|Ⅻ)((\\s|\\.).*)?$"))
-            return 1;
-        else if(text.matches("^(Ⅰ|Ⅱ|Ⅲ|Ⅳ|Ⅴ|Ⅵ|Ⅶ|Ⅷ|Ⅸ|Ⅹ|Ⅺ|Ⅻ).*$")) // 뒤에 공백 없어도됨
-            return 1;
-        else if(text.matches("^[1-9]((\\s|\\.).*)?$"))
-            return 2;
-        else if(text.matches("^[A-Z]((\\s|\\.).*)?$"))
-            return 3;
-        else if(text.matches("^(가|나|다|라|마|바|사|아|자|차|카|타|파|하)((\\s|\\.).*)?$"))
-            return 4;
-        else if(text.matches("^(유형)\\s?([0-9]{1,2})((\\s|\\.).*)?$"))
-            return 5;
-        else if(text.matches("^(•|●|■)((\\s|\\.).*)?$"))
-            return 6;
-        else if(text.matches("^(첫|둘|셋|넷|다섯|여섯|일곱|여덟|아홉|열)\\s?째((\\s|\\.).*)?$"))
-            return 7;
-        else if(text.matches("^.*(?i)chapter.*$"))
-            return 8;
-        else if(text.matches("^(?i)(section).*$"))
-            return 9;
-        else  // 접두어가 없을 때
-            return 10;
-
-    }
-
-    public static boolean isDate(String input) {
-
-        String regex = ".*[0-9]{2,4}.[0-9]{1,2}.[0-9]{1,2}.*";
-        if(input.matches(regex)) {
-            return true;
-        }else {
-            return false;
-        }
-
-    }
-
-    public static boolean hasPageNum(String s) {
-        String s1 = s.replaceAll("(\\s| )+", " ");
-        System.out.println("s1 = " + s1);
-        return s1.matches("(.*\\s\\d+|\\d+)");
-    }
-
-    @Test
-    public void strTest() throws UnsupportedEncodingException {
-        byte[] b = {-30, -128, -94, -20, -99, -68, -21, -109, -79, -22, -72, -119, 32, -21, -113, -124, -20, -96, -124, 32, -21, -84, -72, -20, -96, -100, 8};
-        b = Arrays.copyOfRange(b, 0, b.length - 1);
-        String s = new String(b, "UTF-8");
-        System.out.println("s = " + s);
     }
 
     /**                Ⅲ   Ⅳ     ^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$
