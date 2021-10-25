@@ -1,91 +1,133 @@
 package capstone.jakdu.encrypt;
 
-import org.apache.pdfbox.contentstream.operator.Operator;
-import org.apache.pdfbox.cos.COSArray;
-import org.apache.pdfbox.cos.COSString;
-import org.apache.pdfbox.pdfparser.PDFStreamParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDStream;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Iterator;
-import java.util.List;
 
 public class EncryptTest {
+    //PKCS7이 적용됨 프론트에선 PKCS7모드 사용해야 할듯?
+    private final String alg = "AES/CBC/PKCS5Padding";
+    private final String aesKey = "abcdefghijklmnopqrstuvwxyzabcdef";
+    private final String aesIv = "0123456789abcdef";
+    //NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, UnsupportedEncodingException
+    public String encrypt(String str) throws Exception {
+        Cipher cipher = Cipher.getInstance(alg);
+        // key로 비밀 키 생성
+        SecretKeySpec keySpec = new SecretKeySpec(aesKey.getBytes(), "AES");
+        // iv로 spec 생성
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(aesIv.getBytes());
+        // 암호화 적용
+        cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivParameterSpec);
+
+        byte[] encrypted = cipher.doFinal(str.getBytes("UTF-8"));
+        return Base64.getEncoder().encodeToString(encrypted);
+    }
+
+    public String decrypt(String str) throws Exception {
+        Cipher cipher = Cipher.getInstance(alg);
+        SecretKeySpec keySpec = new SecretKeySpec(aesKey.getBytes(), "AES");
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(aesIv.getBytes());
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivParameterSpec);
+
+        byte[] decoded = Base64.getDecoder().decode(str);
+        byte[] decrypted = cipher.doFinal(decoded);
+        String s = new String(decrypted);
+        return s;
+    }
+
     @Test
-    public void printAllContents() throws IOException {
-        String fileName = "수학의힘알파중1-1.pdf";
-        int page = 10;
+    public void 암호화_복호화_테스트() throws Exception {
+        String s = "암호화 복호화 테스트 문자열";
+        System.out.println("s = " + s);
+        String encrypted = encrypt(s);
+        System.out.println("encrypted = " + encrypted);
+
+        String decrypt = decrypt(encrypted);
+        System.out.println("decrypt = " + decrypt);
+    }
+
+    @Test
+    public void 암호화된_PDF_복호화() throws Exception {
+        String fileName = "2020자이스토리고2수학Ⅰ_enc.pdf";
+        int page = 4;
+        File source = new File(fileName);
+
+        PDDocument pdfDoc = PDDocument.load(source);
+        PDPage pdfDocPage = pdfDoc.getPage(page);
+        Iterator<PDStream> streamIterator = pdfDocPage.getContentStreams();
+
+        while(streamIterator.hasNext()) {
+
+            PDStream stream = streamIterator.next();
+            String s = new String(stream.toByteArray());
+            System.out.println("s = " + s);
+
+            String decrypt = decrypt(s);
+            InputStream inputStream = new ByteArrayInputStream(decrypt.getBytes());
+            PDStream decryptedStream = new PDStream(pdfDoc, inputStream);
+            pdfDocPage.setContents(decryptedStream);
+
+            System.out.println("decrypt = " + decrypt);
+        }
+        pdfDoc.save("2020자이스토리고2수학Ⅰ_dec.pdf");
+        pdfDoc.close();
+    }
+
+    @Test
+    public void PDF_특정_페이지_암호화() throws Exception {
+        String fileName = "enc_ex.pdf";
+        int page = 0;
 
         File source = new File(fileName);
         PDFont font = PDType1Font.HELVETICA_BOLD;
         PDDocument pdfDoc = PDDocument.load(source);
         PDPage pdfDocPage = pdfDoc.getPage(page);
-        PDFStreamParser parser = new PDFStreamParser(pdfDocPage);
-        parser.parse();
-        List<Object> tokens = parser.getTokens();
-        /*tokens.forEach(token -> {
+        Iterator<PDStream> contentStreams = pdfDocPage.getContentStreams();
 
-            if (token instanceof  Operator) {
-                String pstring = "";
-                int prej = 0;
-                Operator op = (Operator) token;
-                System.out.println("name: " + op.getName());
-                //Tj and TJ are the two operators that display strings in a PDF
-                if (op.getName().equals("Tj"))
-                {
-                    // Tj takes one operator and that is the string to display so lets update that operator
-                    COSString previous = (COSString) token;
-                    String string = previous.getString();
-                    //string = string.replaceFirst(searchString, replacement);
-                    previous.setValue(string.getBytes());
-                } else if (op.getName().equals("TJ"))
-                {
-                    COSArray previous = (COSArray) token;
-                    for (int k = 0; k < previous.size(); k++)
-                    {
-                        Object arrElement = previous.getObject(k);
-                        if (arrElement instanceof COSString)
-                        {
-                            COSString cosString = (COSString) arrElement;
-                            String string = cosString.getString();
+        while(contentStreams.hasNext()) {
+            PDStream stream = contentStreams.next();
+            String encrypt = encrypt(new String(stream.toByteArray()));
+            InputStream inputStream = new ByteArrayInputStream(encrypt.getBytes());
+            PDStream newStream = new PDStream(pdfDoc, inputStream);
 
-                            if (j == prej) {
-                                pstring += string;
-                            } else {
-                                prej = j;
-                                pstring = string;
-                            }
-                        }
-                    }
-                }
-            }
-
-
-
-                if(op.getImageData() != null) {
-                    System.out.println("Image!");
-                }
-            }
-
-
-        });*/
-        PDPageContentStream contentStream = new PDPageContentStream(pdfDoc, pdfDocPage, PDPageContentStream.AppendMode.APPEND, true);
-        contentStream.beginText();
-        contentStream.setFont(font, 12);
-        contentStream.newLineAtOffset(150, 500);
-        contentStream.showText("Hello World");
-        contentStream.endText();
-        contentStream.close();
-        pdfDoc.setAllSecurityToBeRemoved(true);
-        pdfDoc.save("test.pdf");
+            pdfDocPage.setContents(newStream);
+            System.out.println("original = " + new String(stream.toByteArray()));
+            System.out.println("encrypt = " + encrypt);
+            String s = new String(stream.toByteArray(), StandardCharsets.UTF_8);
+            System.out.println("s = " + s);
+        }
+        pdfDoc.save("enc_ex_after.pdf");
         pdfDoc.close();
+    }
+
+    @Test
+    public void 원본_복호화_내용_확인() throws Exception {
+        String fileNameOrigin = "2020자이스토리고2수학Ⅰ.pdf";
+        String fileNameDec = "2020자이스토리고2수학Ⅰ_dec.pdf";
+        int page = 4;
+
+        File fileOrigin = new File(fileNameOrigin);
+        File fileDec = new File(fileNameDec);
+
+        PDDocument originDoc = PDDocument.load(fileOrigin);
+        PDDocument decDoc = PDDocument.load(fileDec);
+
+        PDPage originPage = originDoc.getPage(page);
+        PDPage decPage = decDoc.getPage(page);
+
+        Assertions.assertEquals(new String(originPage.getContentStreams().next().toByteArray()),
+                new String(decPage.getContentStreams().next().toByteArray()));
     }
 }
