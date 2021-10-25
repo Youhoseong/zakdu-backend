@@ -1,19 +1,36 @@
 package capstone.jakdu.ocrtest;
 
 
+import capstone.jakdu.Book.domain.PDFBookToc;
+import capstone.jakdu.Book.repository.PDFBookTocRepository;
 import capstone.jakdu.refactoring.MyPDFTextStripper;
 import capstone.jakdu.refactoring.MyTextPositionComparatorMultiCol;
 import capstone.jakdu.refactoring.Regex;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.web.WebAppConfiguration;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-
+@ExtendWith(SpringExtension.class)
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 public class ocrexample {
     MyPDFTextStripper reader = new MyPDFTextStripper();
+
+    @Autowired
+    private PDFBookTocRepository pdfBookTocRepository;
 
     public ocrexample() throws IOException {
     }
@@ -49,7 +66,6 @@ public class ocrexample {
         myTextPositions.sort(new MyTextPositionComparatorMultiCol(reader.getXMax() - reader.getXMin(), colNum, reader.getXMin()));
    
 
-
         // 같은 행 판단 start
         setLineNumber(myTextPositions);
         // 문자열로 묶기
@@ -62,30 +78,10 @@ public class ocrexample {
         }
 
         deleteEmptyChunk(chunkWordList);
-
         joinSeperatedPrefixAndPageNumber(chunkWordList);
-
-
-        /** 목차의 계층구조 파악하기 **/
-
-        // fontsize, 접두어 번호, 계층
-
-        // 같은 열: 폰트사이즈 다른 경우 -> 구분 가능 / [같은 경우 -> 시작 위치]
-        // 같은 폰트 사이즈 중에서, 접두어 유형에 해당하는 계층 번호 key -> fontSize + 접두어 유형
-
         Map<HierarchyData, Boolean> pageExistDB = getPageExist(chunkWordList);
-
         joinSeperatedPageNumber(chunkWordList, pageExistDB);
-
         setHierarchy(chunkWordList);
-        /**
-         *
-         *
-         * 2개 이상 공백을 한개로 변경 --> 텍스트 정렬 --> 모든 내용이 공백이면 제거 --> 접두어 파악
-         * --> 떨어진 접두어 붙이기 --> [계층파악 --> 페이지 t/f파악]
-         * 페이지 붙이는 근거
-         *
-         * **/
 
         for(int j = 0; j < chunkWordList.size(); j++) {
             MyTextPosition chuckWord = chunkWordList.get(j);
@@ -96,6 +92,28 @@ public class ocrexample {
             Boolean pageExist = pageExistDB.get(hierarchyData);
             System.out.println("[isPageExist, hierarchyNum, prefixNum]:" + pageExist + "/ " + hierarchyNumber + "/ "+prefixNumber + "/ " + text);
         }
+
+        PDFBookToc pdfBookToc = PDFBookToc.builder()
+                .bookId(1L)
+                .hierarchyNum(1L)
+                .startPage(1L)
+                .endPage(3L)
+                .parentId(0L)
+                .build();
+
+        pdfBookTocRepository.save(pdfBookToc);
+
+    }
+    
+    @Test
+    public void searchByID() {
+        Optional<PDFBookToc> pdfBookToc = pdfBookTocRepository.findById(1L);
+        
+        PDFBookToc pdfBookToc1 = pdfBookToc.get();
+
+        System.out.println("pdfBookToc1.getBookId() = " + pdfBookToc1.getBookId());
+        System.out.println("pdfBookToc1.getEndPage() = " + pdfBookToc1.getEndPage());
+
     }
 
     private void joinSeperatedPageNumber(List<MyTextPosition> chunkWordList, Map<HierarchyData, Boolean> pageExistDB) {
