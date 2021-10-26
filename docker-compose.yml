@@ -1,0 +1,42 @@
+version: "3.7"
+
+services:
+    database:
+        image: mysql:5.7
+        environment:
+            MYSQL_USER: zakdu
+            MYSQL_DATABASE: zakdu_db
+            MYSQL_ROOT_HOST: "%"
+            MYSQL_PASSWORD: zakdu
+            MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+        volumes:
+            - "./database/jakdu_db/:/application"
+        ports:
+            - "3306:3306"
+        restart: always
+        container_name: jakdu_mysql
+        networks:
+            - backend-network
+
+    spring-boot:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: jakdu-0.0.1-snapshot
+        ports:
+            - "8080:8080"
+        container_name: zakdu_backend
+        restart: always
+        depends_on:
+            - database
+        environment:
+            SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/zakdu_db?useSSL=false
+            SPRING_DATASOURCE_USERNAME: zakdu
+            SPRING_DATASOURCE_PASSWORD: zakdu
+        networks:
+            - backend-network
+            - frontend-network
+
+networks:
+    backend-network:
+    frontend-network:
