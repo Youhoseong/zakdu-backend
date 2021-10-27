@@ -34,4 +34,34 @@ public class MyTextPosition {
     private int prefixId;
     private int hierarchyNum;
 
+    private int startPage;
+    private int endPage = -1;
+
+    public int removeStartPage() {
+
+        int n = this.text.length();
+        String strPage = "";
+        for(int i = n - 1; i >= 0; i--) {
+            if(isNumeric(this.text.substring(i,i+1))) {
+                strPage = this.text.substring(i, i+1) + strPage;
+                this.text = this.text.substring(0,i);
+            }
+            else {
+                break;
+            }
+        }
+        if(strPage.isEmpty()) {
+            return -1;
+        }
+        else {
+            return Integer.parseInt(strPage);
+        }
+
+    }
+
+    public static boolean isNumeric(String str) {
+        return str.matches("\\d+");  //match a number with optional '-' and decimal.
+    }
+
+
 }

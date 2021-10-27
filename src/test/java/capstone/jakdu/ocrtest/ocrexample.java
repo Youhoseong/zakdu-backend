@@ -35,47 +35,27 @@ public class ocrexample {
     public ocrexample() throws IOException {
     }
 
-    /**
-     * @throws IOException
-     * 테스트하려면 이 메소드 돌려보면 됩니다.
-     * sort 할 때 Comparator 생성자 인자 중 colNum 돌리는 파일에 따라서 맞춰 넣어줘야 함.
-     * colNum을 로 하면 1열짜리도 가능
-     * 차례 위쪽 자르기
-     * a < b < c
-     * a < b > c
-     */
     @Test
     public void getMultiColPageExtract() throws IOException {
         String fileName = "2020자이스토리고2수학Ⅰ.pdf";
-        int i = 4; // page no.
+        int startTocPage = 4; // page no.
         int colNum = 3;
-
+        int lastTocPage = 5;
         File source = new File(fileName);
         PDDocument pdfDoc = PDDocument.load(source);
 
         System.out.println("separate:" + reader.getLineSeparator());
-        reader.setStartPage(i);
-        reader.setEndPage(i);
-        String pageText = reader.getText(pdfDoc);
-        List<MyTextPosition> myTextPositions = reader.getMyTextPositions();
+        List<MyTextPosition> chunkWordList = new ArrayList<>();
+        for(int j = startTocPage; j <= lastTocPage; j++)
+            chunkWordList.addAll(getMyTextPositions(j, colNum, pdfDoc));
 
-        System.out.println(pageText);
-        System.out.println("===========");
-        System.out.println("xMax, xMin :" + reader.getXMax()+ " " + reader.getXMin());
 
-        myTextPositions.sort(new MyTextPositionComparatorMultiCol(reader.getXMax() - reader.getXMin(), colNum, reader.getXMin()));
-   
 
-        // 같은 행 판단 start
-        setLineNumber(myTextPositions);
-        // 문자열로 묶기
-        List<MyTextPosition> chunkWordList = joinSameLineCharact(myTextPositions);
-
-        for(int j=0; j<chunkWordList.size(); j++) {
-            System.out.println("chunkWordList.get("+ j +") = ["+ chunkWordList.get(j).getFontSize() + " "+
-                    chunkWordList.get(j).getX() +  "]: " +
-                    chunkWordList.get(j).getText());
-        }
+//        for(int j=0; j<chunkWordList.size(); j++) {
+//            System.out.println("chunkWordList.get("+ j +") = ["+ chunkWordList.get(j).getFontSize() + " "+
+//                    chunkWordList.get(j).getX() +  "]: " +
+//                    chunkWordList.get(j).getText());
+//        }
 
         deleteEmptyChunk(chunkWordList);
         joinSeperatedPrefixAndPageNumber(chunkWordList);
@@ -93,28 +73,141 @@ public class ocrexample {
             System.out.println("[isPageExist, hierarchyNum, prefixNum]:" + pageExist + "/ " + hierarchyNumber + "/ "+prefixNumber + "/ " + text);
         }
 
-        PDFBookToc pdfBookToc = PDFBookToc.builder()
-                .bookId(1L)
-                .hierarchyNum(1L)
-                .startPage(1L)
-                .endPage(3L)
-                .parentId(0L)
-                .build();
+        setStartPageNumber(chunkWordList);
 
-        pdfBookTocRepository.save(pdfBookToc);
+        for(int j = 0; j < chunkWordList.size(); j++) {
+            MyTextPosition chuckWord = chunkWordList.get(j);
+            String text = chuckWord.getText();
+            int hierarchyNumber = chuckWord.getHierarchyNum();
+            int prefixNumber = chuckWord.getPrefixId();
+            HierarchyData hierarchyData = new HierarchyData(chuckWord.getFontSize(), chuckWord.getPrefixId());
+            Boolean pageExist = pageExistDB.get(hierarchyData);
+            System.out.println("[isPageExist, hierarchyNum, prefixNum]:" + pageExist + "/ " + hierarchyNumber + "/ "+prefixNumber + "/ " + text + "/ " + chuckWord.getStartPage());
+        }
+
+        System.out.println("-------------------------------");
+
+        for(int j = 0; j < chunkWordList.size(); j++) {
+            MyTextPosition current = chunkWordList.get(j);
+            if(current.getStartPage() == -1) {
+                setEmptyStartPageNumber(chunkWordList, j);
+            }
+        }
+
+        for(int j = 0; j < chunkWordList.size(); j++) {
+            MyTextPosition current = chunkWordList.get(j);
+            if(current.getEndPage() == -1) {
+                setEndPages(chunkWordList, j);
+            }
+        }
+
+        for(int j = 0; j < chunkWordList.size(); j++) {
+            MyTextPosition chuckWord = chunkWordList.get(j);
+            String text = chuckWord.getText();
+            int hierarchyNumber = chuckWord.getHierarchyNum();
+            int prefixNumber = chuckWord.getPrefixId();
+            HierarchyData hierarchyData = new HierarchyData(chuckWord.getFontSize(), chuckWord.getPrefixId());
+            Boolean pageExist = pageExistDB.get(hierarchyData);
+            System.out.println("[isPageExist, hierarchyNum, prefixNum]:" + pageExist + "/ " + hierarchyNumber + "/ "+prefixNumber + "/ " + text
+                    + "/ " + chuckWord.getStartPage() + "/ " + chuckWord.getEndPage());
+        }
+
+
+//        PDFBookToc pdfBookToc = PDFBookToc.builder()
+//                .bookId(1L)
+//                .hierarchyNum(1L)
+//                .startPage(1L)
+//                .endPage(3L)
+//                .parentId(0L)
+//                .build();
+//
+//        pdfBookTocRepository.save(pdfBookToc);
 
     }
-    
-    @Test
-    public void searchByID() {
-        Optional<PDFBookToc> pdfBookToc = pdfBookTocRepository.findById(1L);
-        
-        PDFBookToc pdfBookToc1 = pdfBookToc.get();
 
-        System.out.println("pdfBookToc1.getBookId() = " + pdfBookToc1.getBookId());
-        System.out.println("pdfBookToc1.getEndPage() = " + pdfBookToc1.getEndPage());
+    private List<MyTextPosition> getMyTextPositions(int i, int colNum, PDDocument pdfDoc) throws IOException {
+        reader.getMyTextPositions().clear();
+        reader.setStartPage(i);
+        reader.setEndPage(i);
+        String pageText = reader.getText(pdfDoc);
+        List<MyTextPosition> myTextPositions = reader.getMyTextPositions();
+
+
+        System.out.println(pageText);
+        System.out.println("===========");
+        System.out.println("xMax, xMin :" + reader.getXMax()+ " " + reader.getXMin());
+
+        myTextPositions.sort(new MyTextPositionComparatorMultiCol(reader.getXMax() - reader.getXMin(), colNum, reader.getXMin()));
+
+
+        // 같은 행 판단 start
+        setLineNumber(myTextPositions);
+
+
+        // 문자열로 묶기
+        List<MyTextPosition> chunkWordList = joinSameLineCharact(myTextPositions);
+
+        for(int j=0; j<chunkWordList.size(); j++) {
+            System.out.println(chunkWordList.get(j).getText());
+
+        }
+
+        System.out.println("ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ");
+
+        return chunkWordList;
+    }
+
+    private int setEndPages(List<MyTextPosition> chunkWordList, int index) {
+        int endPage = -1;
+        if(index == chunkWordList.size() - 1)
+            return chunkWordList.get(index).getStartPage();
+
+        MyTextPosition start = chunkWordList.get(index);
+        for(int i = index + 1; i < chunkWordList.size(); i++) {
+            MyTextPosition current = chunkWordList.get(i);
+            if(current.getEndPage() != -1) continue;
+            if(current.getHierarchyNum() <= start.getHierarchyNum()) {
+                start.setEndPage(Math.max(start.getStartPage(), current.getStartPage() - 1));
+                return start.getEndPage();
+            }
+            else {
+                endPage = Math.max(endPage, setEndPages(chunkWordList, i));
+            }
+        }
+        return -1;
 
     }
+
+
+
+    private int setEmptyStartPageNumber(List<MyTextPosition> chunkWordList, int index) {
+       if(chunkWordList.get(index).getStartPage() != -1) { //페이지 있으면
+            return chunkWordList.get(index).getStartPage();
+       }else {
+           if(index == chunkWordList.size() - 1){
+               return -1;
+           }
+
+           if(chunkWordList.get(index).getHierarchyNum() < chunkWordList.get(index+1).getHierarchyNum()){
+               int pageNum =  setEmptyStartPageNumber(chunkWordList, index+1);
+               chunkWordList.get(index).setStartPage(pageNum);
+
+               return pageNum;
+           }
+           return -1;
+
+       }
+
+
+    }
+
+
+    private void setStartPageNumber(List<MyTextPosition> chunkWordList) {
+        for(int j=0; j<chunkWordList.size(); j++) {
+            chunkWordList.get(j).setStartPage(chunkWordList.get(j).removeStartPage());
+        }
+    }
+
 
     private void joinSeperatedPageNumber(List<MyTextPosition> chunkWordList, Map<HierarchyData, Boolean> pageExistDB) {
         for(int j = 0; j < chunkWordList.size()-1; j++) {
@@ -134,16 +227,33 @@ public class ocrexample {
         int hierarchyNum = 0;
         Map<HierarchyData, Integer> hierarchyDB = new HashMap<>();
 
+        MyTextPosition previousWord = chunkWordList.get(0);
         for(int j = 0; j < chunkWordList.size(); j++) {
             MyTextPosition chunkWord = chunkWordList.get(j);
-
             HierarchyData hierarchyData = new HierarchyData(chunkWord.getFontSize(), chunkWord.getPrefixId());
             Integer hNum = hierarchyDB.get(hierarchyData);
             if(hNum == null) { // 1이 최상위 계층
-                hierarchyDB.put(hierarchyData, ++hierarchyNum);
-                hNum = hierarchyNum;
-            }
 
+                if(j != 0 && hierarchyNum+1 > previousWord.getHierarchyNum()+1 && chunkWord.getPrefixId() != 10) {
+
+                    Iterator<HierarchyData> iterator = hierarchyDB.keySet().iterator();
+                    while(iterator.hasNext()) {
+                        HierarchyData key = iterator.next();
+                        if(key.getPrefixNum() == chunkWord.getPrefixId()) {
+                            hNum = hierarchyDB.get(key);
+                            break;
+                        }
+                    }
+
+                }
+                if(hNum == null){
+                    hierarchyDB.put(hierarchyData, ++hierarchyNum);
+                    hNum = hierarchyNum;
+                }
+
+            }
+            previousWord = chunkWord;
+            System.out.println("chunkWord = " + chunkWord.getText() + " / " + chunkWord.getPrefixId());
             chunkWord.setHierarchyNum(hNum);
         }
 
@@ -254,7 +364,7 @@ public class ocrexample {
         String sameLineTextString = "";
         int before = myTextPositions.get(0).getId();
         List<MyTextPosition> chunkWordList = new ArrayList<>();
-        
+
         float fontSize = myTextPositions.get(0).getFontSize();
         float X = myTextPositions.get(0).getX();
         for (int j = 0; j < myTextPositions.size(); j++) {
@@ -271,7 +381,13 @@ public class ocrexample {
             }
 
             System.out.print(myTextPosition.getText());
+            if(sameLineTextString.matches("(\\s| )+")) {
+                fontSize = myTextPosition.getFontSize();
+            }
+
             sameLineTextString += myTextPosition.getText();
+
+
         }
         sameLineTextString = sameLineTextString.replaceAll("((\\.\\s){3,}|(\\.{3,}))","... ");
         chunkWordList.add(new MyTextPosition(fontSize,X, sameLineTextString.replaceAll("(\\s| )+", " ")));

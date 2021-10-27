@@ -1,11 +1,13 @@
 package capstone.jakdu.ocrtest;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Objects;
 
 @AllArgsConstructor
+@Getter
 @Setter
 class HierarchyData {
     private float fontSize;

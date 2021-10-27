@@ -4,6 +4,7 @@ import capstone.jakdu.ocrtest.MyTextPosition;
 import capstone.jakdu.refactoring.Regex;
 import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
@@ -44,6 +45,7 @@ public class MyPDFTextStripper extends PDFTextStripper  {
 
     @Override
     protected void writeString(String text, List<TextPosition> textPositions) throws IOException {
+        System.out.println("text.length() + textPositions.size() = " + text.length() + "/ " +textPositions.size());
         byte[] b = text.getBytes(StandardCharsets.UTF_8);
         if(b[b.length-1] == 8)
             b = Arrays.copyOfRange(b, 0, b.length - 1);
@@ -52,8 +54,8 @@ public class MyPDFTextStripper extends PDFTextStripper  {
         }
         text = new String(b, StandardCharsets.UTF_8);
         String tempText = text.replaceAll(" ", "");
-
-        text = text.replaceAll("(\\s| )+", " ");
+        System.out.println("text.length() + textPositions.size() = " + text.length() + "/ " +textPositions.size());
+        //text = text.replaceAll("(\\s| )+", " ");
 
         // 쓸데없는 값 제거
         // 차례, 목차, contents
@@ -80,6 +82,7 @@ public class MyPDFTextStripper extends PDFTextStripper  {
 
         for (int i = 0; i < text.length(); i++) {
             TextPosition t;
+            if(i >= textPositions.size()) break;
             t = textPositions.get(i);
 
             if(t.getX() < 0 || t.getY() < 0)
@@ -87,16 +90,18 @@ public class MyPDFTextStripper extends PDFTextStripper  {
 
             xMax = Math.max(xMax, t.getEndX());
             xMin = Math.min(xMin, t.getX());
-            System.out.println("" + text.substring(i, i + 1) + "/" + t.getX() + "/" + t.getY());
+            System.out.println("" + text.substring(i, i + 1) + "/" + t.getX() + "/" + t.getY() + "/ " + t.getFontSizeInPt());
             myTextPositions.add(new MyTextPosition(t.getX(), t.getY(), t.getEndX(), t.getFontSizeInPt(), t.getHeight(), text.substring(i, i + 1), id));
         }
         // 마지막에 공백 삽입
-        TextPosition t = textPositions.get(text.length() - 1);
+
+        TextPosition t = textPositions.get(Math.min(textPositions.size() - 1, text.length() - 1));
         myTextPositions.add(new MyTextPosition(t.getX(), t.getY(), t.getEndX(), t.getFontSizeInPt(), t.getHeight(), " ", id));
         id++;
-        System.out.println("text = " + text);
+        //System.out.println("text = " + text);
 
         if (startOfLine) {
+
             TextPosition firstPosition = textPositions.get(0);
             writeString(String.format("[%s %s %s %s]", firstPosition.getFontSizeInPt(),firstPosition.getHeight(), firstPosition.getXDirAdj(), firstPosition.getYDirAdj()));
             startOfLine = false;
