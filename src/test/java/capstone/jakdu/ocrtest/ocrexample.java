@@ -18,6 +18,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.web.WebAppConfiguration;
 
+import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -36,12 +37,33 @@ public class ocrexample {
     }
 
     @Test
-    public void getMultiColPageExtract() throws IOException {
-        String fileName = "2020자이스토리고2수학Ⅰ.pdf";
-        int startTocPage = 4; // page no.
+    @Transactional
+    public void 목차분석_테스트() throws IOException {
+        String fileName = "9종교과서시크릿수학1-본문(학생용).pdf";
+        int startTocPage = 2; // page no.
         int colNum = 3;
-        int lastTocPage = 5;
-        File source = new File(fileName);
+        int lastTocPage = 2;
+        List<MyTextPosition> chunkWordList = getMultiColPageExtract(fileName, startTocPage, lastTocPage, colNum);
+
+        for(int i=0; i<chunkWordList.size(); i++) {
+            MyTextPosition myTextPosition = chunkWordList.get(i);
+            PDFBookToc pdfBookToc = PDFBookToc.builder()
+                    .bookId(1L)
+                    .hierarchyNum(myTextPosition.getHierarchyNum())
+                    .startPage(myTextPosition.getStartPage())
+                    .endPage(myTextPosition.getEndPage())
+                    .title(myTextPosition.getText())
+                    .build();
+
+            pdfBookTocRepository.save(pdfBookToc);
+
+        }
+
+    }
+
+    public List<MyTextPosition> getMultiColPageExtract(String fileName, int startTocPage, int lastTocPage, int colNum) throws IOException {
+
+        File source = new File(fileName);:q
         PDDocument pdfDoc = PDDocument.load(source);
 
         System.out.println("separate:" + reader.getLineSeparator());
@@ -94,13 +116,18 @@ public class ocrexample {
             }
         }
 
+        int pageNum = pdfDoc.getNumberOfPages();
         for(int j = 0; j < chunkWordList.size(); j++) {
             MyTextPosition current = chunkWordList.get(j);
             if(current.getEndPage() == -1) {
                 setEndPages(chunkWordList, j);
             }
-        }
 
+            if(current.getStartPage() != -1 && current.getEndPage() == -1) {
+                current.setEndPage(pageNum);
+            }
+        }
+        System.out.println("pageExist / hierarchyNumber / prefixNumber / title / startPage / endPage");
         for(int j = 0; j < chunkWordList.size(); j++) {
             MyTextPosition chuckWord = chunkWordList.get(j);
             String text = chuckWord.getText();
@@ -108,9 +135,12 @@ public class ocrexample {
             int prefixNumber = chuckWord.getPrefixId();
             HierarchyData hierarchyData = new HierarchyData(chuckWord.getFontSize(), chuckWord.getPrefixId());
             Boolean pageExist = pageExistDB.get(hierarchyData);
-            System.out.println("[isPageExist, hierarchyNum, prefixNum]:" + pageExist + "/ " + hierarchyNumber + "/ "+prefixNumber + "/ " + text
+
+            System.out.println(pageExist + "/ " + hierarchyNumber + "/ "+prefixNumber + "/ " + text
                     + "/ " + chuckWord.getStartPage() + "/ " + chuckWord.getEndPage());
         }
+
+        return chunkWordList;
 
 
 //        PDFBookToc pdfBookToc = PDFBookToc.builder()
@@ -126,7 +156,7 @@ public class ocrexample {
     }
 
     private List<MyTextPosition> getMyTextPositions(int i, int colNum, PDDocument pdfDoc) throws IOException {
-        reader.getMyTextPositions().clear();
+        reader.reset();
         reader.setStartPage(i);
         reader.setEndPage(i);
         String pageText = reader.getText(pdfDoc);
@@ -153,7 +183,6 @@ public class ocrexample {
         }
 
         System.out.println("ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ");
-
         return chunkWordList;
     }
 
@@ -166,9 +195,13 @@ public class ocrexample {
         for(int i = index + 1; i < chunkWordList.size(); i++) {
             MyTextPosition current = chunkWordList.get(i);
             if(current.getEndPage() != -1) continue;
+            //if(current.getStartPage() == -1) continue;
+
             if(current.getHierarchyNum() <= start.getHierarchyNum()) {
-                start.setEndPage(Math.max(start.getStartPage(), current.getStartPage() - 1));
-                return start.getEndPage();
+                endPage = Math.max(start.getStartPage(), current.getStartPage());
+                if(start.getStartPage() != -1)
+                    start.setEndPage(endPage);
+                return endPage;
             }
             else {
                 endPage = Math.max(endPage, setEndPages(chunkWordList, i));
@@ -189,7 +222,13 @@ public class ocrexample {
            }
 
            if(chunkWordList.get(index).getHierarchyNum() < chunkWordList.get(index+1).getHierarchyNum()){
-               int pageNum =  setEmptyStartPageNumber(chunkWordList, index+1);
+               int pageNum = setEmptyStartPageNumber(chunkWordList, index+1);
+               chunkWordList.get(index).setStartPage(pageNum);
+
+               return pageNum;
+           }
+           else if(index > 0 && chunkWordList.get(index - 1).getHierarchyNum() == chunkWordList.get(index).getHierarchyNum()) {
+               int pageNum = setEmptyStartPageNumber(chunkWordList, index - 1);
                chunkWordList.get(index).setStartPage(pageNum);
 
                return pageNum;
@@ -233,17 +272,51 @@ public class ocrexample {
             HierarchyData hierarchyData = new HierarchyData(chunkWord.getFontSize(), chunkWord.getPrefixId());
             Integer hNum = hierarchyDB.get(hierarchyData);
             if(hNum == null) { // 1이 최상위 계층
-
-                if(j != 0 && hierarchyNum+1 > previousWord.getHierarchyNum()+1 && chunkWord.getPrefixId() != 10) {
-
+                if(!Regex.isStartPrefix(chunkWord.getText(),chunkWord.getPrefixId())) {
                     Iterator<HierarchyData> iterator = hierarchyDB.keySet().iterator();
+                    HierarchyData minFontGapHierarchyData = null;
+                    float minFontSizeGap = 1000000f;
                     while(iterator.hasNext()) {
                         HierarchyData key = iterator.next();
                         if(key.getPrefixNum() == chunkWord.getPrefixId()) {
-                            hNum = hierarchyDB.get(key);
-                            break;
+                            if(minFontGapHierarchyData == null) {
+                                minFontGapHierarchyData = key;
+                                minFontSizeGap = fontSizeGap(chunkWord.getFontSize(), key);
+                            }else {
+                                if(minFontSizeGap > fontSizeGap(chunkWord.getFontSize(), key)) {
+                                    minFontSizeGap = fontSizeGap(chunkWord.getFontSize(), key);
+                                    minFontGapHierarchyData = key;
+                                }
+                            }
                         }
                     }
+
+                    hNum = hierarchyDB.get(minFontGapHierarchyData);
+                }
+
+
+                // 계층이 2이상 차이나면
+                if(j != 0 && hierarchyNum+1 > previousWord.getHierarchyNum()+1 && chunkWord.getPrefixId() != 10) {
+                    Iterator<HierarchyData> iterator = hierarchyDB.keySet().iterator();
+                    HierarchyData minFontGapHierarchyData = null;
+                    float minFontSizeGap = 1000000f;
+                    while(iterator.hasNext()) {
+                        HierarchyData key = iterator.next();
+                        if(key.getPrefixNum() == chunkWord.getPrefixId()) {
+                            if(minFontGapHierarchyData == null) {
+                                minFontGapHierarchyData = key;
+                                minFontSizeGap = fontSizeGap(chunkWord.getFontSize(), key);
+                            }else {
+                                if(minFontSizeGap > fontSizeGap(chunkWord.getFontSize(), key)) {
+                                    minFontSizeGap = fontSizeGap(chunkWord.getFontSize(), key);
+                                    minFontGapHierarchyData = key;
+                                }
+
+                            }
+                        }
+                    }
+
+                    hNum = hierarchyDB.get(minFontGapHierarchyData);
 
                 }
                 if(hNum == null){
@@ -257,6 +330,10 @@ public class ocrexample {
             chunkWord.setHierarchyNum(hNum);
         }
 
+    }
+
+    private float fontSizeGap(float fontSize, HierarchyData data2) {
+        return Math.abs(fontSize - data2.getFontSize());
     }
 
     private Map<HierarchyData, Boolean> getPageExist(List<MyTextPosition> chunkWordList) {
@@ -281,9 +358,23 @@ public class ocrexample {
     }
 
     private void joinSeperatedPrefixAndPageNumber(List<MyTextPosition> chunkWordList) {
+        List<MyTextPosition> prefixHTextPositionList = new ArrayList<>();
         for(int j = 0; j < chunkWordList.size(); j++) {
             String text = chunkWordList.get(j).getText();
             int prefixNumber = Regex.getPrefixNum(text);
+            if (prefixNumber == 3 && text.matches("^H((\\s|\\.).*)?$")){
+                prefixHTextPositionList.add(chunkWordList.get(j));
+                System.out.println("[H prefixNumber]============================================================================: " + text);
+            }
+            else if(prefixNumber == 1 && text.matches("^I((\\s|\\.).*)?$")) {
+                for(int i=0; i< prefixHTextPositionList.size(); i++) {
+                    if(prefixHTextPositionList.get(i).getFontSize() == chunkWordList.get(j).getFontSize()) {
+                        prefixNumber = prefixHTextPositionList.get(i).getPrefixId();
+                        prefixHTextPositionList.remove(i);
+                        break;
+                    }
+                }
+            }
             System.out.println("[prefixNumber]: " + prefixNumber + "/ " + text);
             chunkWordList.get(j).setPrefixId(prefixNumber);
         }

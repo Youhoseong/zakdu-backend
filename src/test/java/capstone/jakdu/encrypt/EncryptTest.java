@@ -60,8 +60,8 @@ public class EncryptTest {
 
     @Test
     public void 암호화된_PDF_복호화() throws Exception {
-        String fileName = "2020자이스토리고2수학Ⅰ_enc.pdf";
-        int page = 4;
+        String fileName = "9종교과서시크릿수학1-본문(학생용)_enc.pdf";
+        int page = 1;
         File source = new File(fileName);
 
         PDDocument pdfDoc = PDDocument.load(source);
@@ -81,17 +81,16 @@ public class EncryptTest {
 
             System.out.println("decrypt = " + decrypt);
         }
-        pdfDoc.save("2020자이스토리고2수학Ⅰ_dec.pdf");
+        pdfDoc.save("9종교과서시크릿수학1-본문(학생용)_dec.pdf");
         pdfDoc.close();
     }
 
     @Test
     public void PDF_특정_페이지_암호화() throws Exception {
-        String fileName = "enc_ex.pdf";
-        int page = 0;
+        String fileName = "9종교과서시크릿수학1-본문(학생용).pdf";
+        int page = 1;
 
         File source = new File(fileName);
-        PDFont font = PDType1Font.HELVETICA_BOLD;
         PDDocument pdfDoc = PDDocument.load(source);
         PDPage pdfDocPage = pdfDoc.getPage(page);
         Iterator<PDStream> contentStreams = pdfDocPage.getContentStreams();
@@ -108,7 +107,7 @@ public class EncryptTest {
             String s = new String(stream.toByteArray(), StandardCharsets.UTF_8);
             System.out.println("s = " + s);
         }
-        pdfDoc.save("enc_ex_after.pdf");
+        pdfDoc.save("9종교과서시크릿수학1-본문(학생용)_enc.pdf");
         pdfDoc.close();
     }
 

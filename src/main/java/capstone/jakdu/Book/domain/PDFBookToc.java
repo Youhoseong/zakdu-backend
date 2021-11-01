@@ -17,13 +17,11 @@ public class PDFBookToc {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long hierarchyNum;
+    private int hierarchyNum;
     private Long bookId;
 
-    private Long startPage;
-    private Long endPage;
-
-    private Long parentId;
-
+    private int startPage;
+    private int endPage;
+    private String title;
 
 }

@@ -56,6 +56,31 @@ public class Regex {
 
     }
 
+    public static boolean isStartPrefix(String text, int prefixId) {
+        text = text.replaceAll("\\s+", " ");
+
+        switch (prefixId) {
+            case 0:
+                return text.matches("^01((\\s|\\.).*)?$");
+            case 1:
+                return text.matches("^I((\\s|\\.).*)?$");
+            case 2:
+                return text.matches("^1((\\s|\\.).*)?$");
+            case 3:
+                return text.matches("^A((\\s|\\.).*)?$");
+            case 4:
+                return text.matches("^(가)((\\s|\\.).*)?$");
+            case 5:
+                return text.matches("^(유형)\\s?(1|01)((\\s|\\.).*)?$");
+            case 6:
+                return text.matches("^(•|●)((\\s|\\.).*)?$");
+            case 7:
+                return text.matches("^첫째((\\s|\\.).*)?$");
+        }
+        return true;
+
+    }
+
     public static boolean isDate(String input) {
 
         String regex = ".*[0-9]{2,4}.[0-9]{1,2}.[0-9]{1,2}.*";

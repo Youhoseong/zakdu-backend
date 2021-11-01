@@ -29,6 +29,14 @@ public class MyPDFTextStripper extends PDFTextStripper  {
     float contentsY = 0;
     boolean startOfLine = true;
 
+    public void reset() {
+        this.id = 0;
+        this.xMin = 999;
+        this.xMax = 0;
+        this.contentsY = 0;
+        this.startOfLine = true;
+        this.myTextPositions.clear();
+    }
 
 
     @Override

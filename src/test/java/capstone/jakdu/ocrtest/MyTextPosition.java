@@ -36,6 +36,7 @@ public class MyTextPosition {
 
     private int startPage;
     private int endPage = -1;
+    private int parentId = -1;
 
     public int removeStartPage() {
 

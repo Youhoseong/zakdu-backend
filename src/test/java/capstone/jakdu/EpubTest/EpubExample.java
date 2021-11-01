@@ -107,7 +107,8 @@ public class EpubExample {
             }
             referenceList.add(tocReference);
 
-            System.out.println(hierarchyNum + " / " + tocReference.getTitle() + " / " + tocReference.getResource().getHref() + " / " + tocReference.getResource().getSize());
+           // System.out.println(hierarchyNum + " / " + tocReference.getTitle() + " / " + tocReference.getResource().getHref() + " / " + tocReference.getResource().getSize());
+            System.out.println(hierarchyNum + " / " + tocReference.getTitle());
 
             if(!tocReference.getChildren().isEmpty()) {
                 printAllToc(tocReference.getChildren(), hierarchyNum+1);
