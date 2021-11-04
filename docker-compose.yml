@@ -3,6 +3,10 @@ version: "3.7"
 services:
     database:
         image: mysql:5.7
+        command: [ "--lower_case_table_names=1",
+                "--ignore-db-dir=lost+found",
+                "--character-set-server=utf8",
+                "--collation-server=utf8_general_ci" ]
         environment:
             MYSQL_USER: zakdu
             MYSQL_DATABASE: zakdu_db
@@ -19,16 +23,18 @@ services:
             - backend-network
 
     spring-boot:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        image: jakdu-0.0.1-snapshot
+#        build:
+#            context: .
+#            dockerfile: Dockerfile
+        image: jakdu:0.0.1-SNAPSHOT
         ports:
             - "8080:8080"
         container_name: zakdu_backend
         restart: always
         depends_on:
             - database
+        volumes:
+            - .:/zakdu/tmp:rw
         environment:
             SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/zakdu_db?useSSL=false
             SPRING_DATASOURCE_USERNAME: zakdu
