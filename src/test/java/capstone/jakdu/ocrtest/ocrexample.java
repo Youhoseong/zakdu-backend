@@ -7,16 +7,17 @@ import capstone.jakdu.refactoring.MyPDFTextStripper;
 import capstone.jakdu.refactoring.MyTextPositionComparatorMultiCol;
 import capstone.jakdu.refactoring.Regex;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.context.web.WebAppConfiguration;
 
 import javax.transaction.Transactional;
 import java.io.File;
@@ -39,11 +40,20 @@ public class ocrexample {
     @Test
     @Transactional
     public void 목차분석_테스트() throws IOException {
-        String fileName = "9종교과서시크릿수학1-본문(학생용).pdf";
+
         int startTocPage = 2; // page no.
         int colNum = 3;
         int lastTocPage = 2;
-        List<MyTextPosition> chunkWordList = getMultiColPageExtract(fileName, startTocPage, lastTocPage, colNum);
+        String fileName = "./전공책/James Bradfield - Introduction to the economics of financial markets-Oxford University Press (2007).pdf";
+        PDDocument document = PDDocument.load(new File(fileName));
+        PDDocumentOutline outline =  document.getDocumentCatalog().getDocumentOutline();
+
+        List<MyTextPosition> chunkWordList;
+        if(outline != null) {
+            chunkWordList = getTocFromBookmark(document, outline);
+        }else {
+            chunkWordList = getMultiColPageExtract(document, startTocPage, lastTocPage, colNum);
+        }
 
         for(int i=0; i<chunkWordList.size(); i++) {
             MyTextPosition myTextPosition = chunkWordList.get(i);
@@ -56,28 +66,63 @@ public class ocrexample {
                     .build();
 
             pdfBookTocRepository.save(pdfBookToc);
-
         }
 
     }
 
-    public List<MyTextPosition> getMultiColPageExtract(String fileName, int startTocPage, int lastTocPage, int colNum) throws IOException {
 
-        File source = new File(fileName);:q
-        PDDocument pdfDoc = PDDocument.load(source);
+    public List<MyTextPosition> getTocFromBookmark(PDDocument document, PDDocumentOutline outline) throws IOException {
+
+        List<MyTextPosition> chunkWordList = new ArrayList<>();
+
+        printBookmark(chunkWordList,outline, "", document, 0);
+        int pageNum = document.getNumberOfPages();
+        for(int j = 0; j < chunkWordList.size(); j++) {
+            MyTextPosition current = chunkWordList.get(j);
+            if(current.getEndPage() == -1) {
+                setEndPages(chunkWordList, j);
+            }
+
+            if(current.getStartPage() != -1 && current.getEndPage() == -1) {
+                current.setEndPage(pageNum);
+            }
+        }
+
+        for (int i = 0; i < chunkWordList.size(); i++) {
+            MyTextPosition temp = chunkWordList.get(i);
+            System.out.println(temp.getHierarchyNum() + " " + temp.getText() + " " + temp.getStartPage() + " " + temp.getEndPage());
+        }
+
+
+        document.close();
+        return chunkWordList;
+    }
+
+    public void printBookmark(List<MyTextPosition> chunkWordList ,PDOutlineNode bookmark, String indentation, PDDocument document, int hierarchyNum) throws IOException
+    {
+        PDOutlineItem current = bookmark.getFirstChild();
+        while (current != null)
+        {
+            PDPage currentPage = current.findDestinationPage(document);
+            Integer pageNumber = document.getDocumentCatalog().getPages().indexOf(currentPage) + 1;
+
+            chunkWordList.add(new MyTextPosition(current.getTitle(), pageNumber,-1, hierarchyNum));
+
+            printBookmark(chunkWordList, current, indentation + "    ", document, hierarchyNum+1);
+            current = current.getNextSibling();
+        }
+    }
+
+
+    public List<MyTextPosition> getMultiColPageExtract( PDDocument pdfDoc, int startTocPage, int lastTocPage, int colNum) throws IOException {
+
+
 
         System.out.println("separate:" + reader.getLineSeparator());
         List<MyTextPosition> chunkWordList = new ArrayList<>();
         for(int j = startTocPage; j <= lastTocPage; j++)
             chunkWordList.addAll(getMyTextPositions(j, colNum, pdfDoc));
 
-
-
-//        for(int j=0; j<chunkWordList.size(); j++) {
-//            System.out.println("chunkWordList.get("+ j +") = ["+ chunkWordList.get(j).getFontSize() + " "+
-//                    chunkWordList.get(j).getX() +  "]: " +
-//                    chunkWordList.get(j).getText());
-//        }
 
         deleteEmptyChunk(chunkWordList);
         joinSeperatedPrefixAndPageNumber(chunkWordList);
@@ -140,6 +185,7 @@ public class ocrexample {
                     + "/ " + chuckWord.getStartPage() + "/ " + chuckWord.getEndPage());
         }
 
+        pdfDoc.close();
         return chunkWordList;
 
 

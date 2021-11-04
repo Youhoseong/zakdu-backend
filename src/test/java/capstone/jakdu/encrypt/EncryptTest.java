@@ -13,6 +13,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Iterator;
 
@@ -25,6 +26,7 @@ public class EncryptTest {
     public String encrypt(String str) throws Exception {
         Cipher cipher = Cipher.getInstance(alg);
         // key로 비밀 키 생성
+        System.out.println("Arrays.toString(aesKey.getBytes()) = " + Arrays.toString(aesKey.getBytes()));
         SecretKeySpec keySpec = new SecretKeySpec(aesKey.getBytes(), "AES");
         // iv로 spec 생성
         IvParameterSpec ivParameterSpec = new IvParameterSpec(aesIv.getBytes());
@@ -61,7 +63,7 @@ public class EncryptTest {
     @Test
     public void 암호화된_PDF_복호화() throws Exception {
         String fileName = "9종교과서시크릿수학1-본문(학생용)_enc.pdf";
-        int page = 1;
+        int page = 0;
         File source = new File(fileName);
 
         PDDocument pdfDoc = PDDocument.load(source);
@@ -71,7 +73,7 @@ public class EncryptTest {
         while(streamIterator.hasNext()) {
 
             PDStream stream = streamIterator.next();
-            String s = new String(stream.toByteArray());
+            String s = new String(stream.toByteArray(), StandardCharsets.UTF_8);
             System.out.println("s = " + s);
 
             String decrypt = decrypt(s);
@@ -87,7 +89,7 @@ public class EncryptTest {
 
     @Test
     public void PDF_특정_페이지_암호화() throws Exception {
-        String fileName = "9종교과서시크릿수학1-본문(학생용).pdf";
+        String fileName = "example.pdf";
         int page = 1;
 
         File source = new File(fileName);
@@ -105,17 +107,16 @@ public class EncryptTest {
             System.out.println("original = " + new String(stream.toByteArray()));
             System.out.println("encrypt = " + encrypt);
             String s = new String(stream.toByteArray(), StandardCharsets.UTF_8);
-            System.out.println("s = " + s);
         }
-        pdfDoc.save("9종교과서시크릿수학1-본문(학생용)_enc.pdf");
+        pdfDoc.save("example_enc.pdf");
         pdfDoc.close();
     }
 
     @Test
     public void 원본_복호화_내용_확인() throws Exception {
-        String fileNameOrigin = "2020자이스토리고2수학Ⅰ.pdf";
-        String fileNameDec = "2020자이스토리고2수학Ⅰ_dec.pdf";
-        int page = 4;
+        String fileNameOrigin = "9종교과서시크릿수학1-본문(학생용).pdf";
+        String fileNameDec = "9종교과서시크릿수학1-본문(학생용)_dec.pdf";
+        int page = 0;
 
         File fileOrigin = new File(fileNameOrigin);
         File fileDec = new File(fileNameDec);
@@ -128,5 +129,80 @@ public class EncryptTest {
 
         Assertions.assertEquals(new String(originPage.getContentStreams().next().toByteArray()),
                 new String(decPage.getContentStreams().next().toByteArray()));
+    }
+
+    @Test
+    public void 바이트_추출() throws Exception {
+        String fileName = "example_enc.pdf";
+        int page = 1;
+
+        File source = new File(fileName);
+        PDDocument pdfDoc = PDDocument.load(source);
+        PDPage pdfDocPage = pdfDoc.getPage(page);
+        Iterator<PDStream> contentStreams = pdfDocPage.getContentStreams();
+
+        while(contentStreams.hasNext()) {
+            PDStream stream = contentStreams.next();
+
+            String s = new String(stream.toByteArray(), StandardCharsets.UTF_8);
+            System.out.println("s = " + s);
+        }
+
+        pdfDoc.close();
+    }
+
+    @Test
+    public void 여러_페이지_암호화_테스트() throws Exception {
+        String fileName = "9종교과서시크릿수학1-본문(학생용).pdf";
+
+        File source = new File(fileName);
+        PDDocument pdfDoc = PDDocument.load(source);
+        for (int i = 0; i < 3; i++) {
+            PDPage pdfDocPage = pdfDoc.getPage(i);
+            Iterator<PDStream> contentStreams = pdfDocPage.getContentStreams();
+            while(contentStreams.hasNext()) {
+                PDStream stream = contentStreams.next();
+                String encrypt = encrypt(new String(stream.toByteArray()));
+                InputStream inputStream = new ByteArrayInputStream(encrypt.getBytes());
+                PDStream newStream = new PDStream(pdfDoc, inputStream);
+
+                pdfDocPage.setContents(newStream);
+                System.out.println("original = " + new String(stream.toByteArray()));
+                System.out.println("encrypt = " + encrypt);
+                String s = new String(stream.toByteArray(), StandardCharsets.UTF_8);
+                System.out.println("s = " + s);
+            }
+
+        }
+        pdfDoc.save("9종교과서시크릿수학1-본문(학생용)_enc.pdf");
+        pdfDoc.close();
+    }
+
+    @Test
+    public void 여러_페이지_복호화_테스트() throws Exception {
+        String fileName = "9종교과서시크릿수학1-본문(학생용)_enc.pdf";
+
+        File source = new File(fileName);
+        PDDocument pdfDoc = PDDocument.load(source);
+        for (int i = 0; i < 3; i++) {
+            PDPage pdfDocPage = pdfDoc.getPage(i);
+            Iterator<PDStream> contentStreams = pdfDocPage.getContentStreams();
+            while(contentStreams.hasNext()) {
+
+                PDStream stream = contentStreams.next();
+                String s = new String(stream.toByteArray());
+                System.out.println("s = " + s);
+
+                String decrypt = decrypt(s);
+                InputStream inputStream = new ByteArrayInputStream(decrypt.getBytes());
+                PDStream decryptedStream = new PDStream(pdfDoc, inputStream);
+                pdfDocPage.setContents(decryptedStream);
+
+                System.out.println("decrypt = " + decrypt);
+            }
+
+        }
+        pdfDoc.save("9종교과서시크릿수학1-본문(학생용)_dec.pdf");
+        pdfDoc.close();
     }
 }

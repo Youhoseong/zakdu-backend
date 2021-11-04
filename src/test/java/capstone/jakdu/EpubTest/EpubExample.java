@@ -1,22 +1,44 @@
 package capstone.jakdu.EpubTest;
 
+import capstone.jakdu.Book.domain.EPubToc;
+import capstone.jakdu.Book.domain.EpubFileToc;
+import capstone.jakdu.Book.repository.EPubTocRepository;
+import capstone.jakdu.Book.repository.EpubFileTocRepository;
 import nl.siegmann.epublib.domain.*;
 import nl.siegmann.epublib.epub.EpubReader;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.internal.matchers.Null;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import javax.transaction.Transactional;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
+@ExtendWith(SpringExtension.class)
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 public class EpubExample {
 
     Map<String, List<TOCReference>> fileNameTOCReferenceMap = new LinkedHashMap<>();
 
-    Map<Integer, List<TOCReference>> indexTOCReferenceMap  = new LinkedHashMap<>();
+    Map<Integer, List<EPubTocObject>> indexTOCReferenceMap  = new LinkedHashMap<>();
     Map<Integer, List<String>> indexFileReferenceMap = new LinkedHashMap<>();
+    Map<String, Integer> tocTitleHierarchyMap = new LinkedHashMap<>();
+
+    @Autowired
+    private EpubFileTocRepository epubFileTocRepository;
+    @Autowired
+    EPubTocRepository ePubTocRepository;
 
     @Test
+    @Transactional
     public void epubLibTest() throws IOException {
         // read epub file
         EpubReader epubReader = new EpubReader();
@@ -72,7 +94,14 @@ public class EpubExample {
                 List<String> hrefList = new ArrayList<>();
                 hrefList.add(content.getHref());
                 index++;
-                indexTOCReferenceMap.put(index, tocReferenceList);
+                List<EPubTocObject> ePubTocObjects = new ArrayList<>();
+
+                for(int j=0; j<tocReferenceList.size(); j++) {
+                    int hierarchyNum = tocTitleHierarchyMap.get(tocReferenceList.get(j).getTitle());
+                    ePubTocObjects.add(new EPubTocObject(hierarchyNum, tocReferenceList.get(j)));
+                }
+
+                indexTOCReferenceMap.put(index, ePubTocObjects);
                 indexFileReferenceMap.put(index, hrefList);
             }else {
                 if(index < 0)
@@ -86,10 +115,40 @@ public class EpubExample {
                 System.out.println("filename = " + filename);
             });
             indexTOCReferenceMap.get(i).forEach(toc -> {
-                System.out.println("toc.getTitle() = " + toc.getTitle());
+                System.out.println("toc.getTitle() = " + toc.getTocReference().getTitle());
             });
 
             System.out.println();
+        }
+
+
+        for(int i=0; i<= index; i++) {
+            List<String> fileTitleList = indexFileReferenceMap.get(i);
+            List<EPubTocObject> ePubTocObjectList = indexTOCReferenceMap.get(i);
+            for(int j=0; j<fileTitleList.size(); j++) {
+                EpubFileToc epubFileToc = EpubFileToc.builder()
+                        .fileTitle(fileTitleList.get(j))
+                        .bookId(1L)
+                        .sellGroup(i)
+                        .build();
+
+                epubFileTocRepository.save(epubFileToc);
+
+            }
+
+            for(int j=0; j<ePubTocObjectList.size(); j++) {
+                EPubToc ePubToc = EPubToc.builder()
+                        .title(ePubTocObjectList.get(j).getTocReference().getTitle())
+                        .hierarchyNum(ePubTocObjectList.get(j).getHierarchyNum())
+                        .sellGroup(i)
+                        .bookId(1L)
+                        .build();
+
+                ePubTocRepository.save(ePubToc);
+            }
+
+
+
         }
     }
     // xhtml파일이름
@@ -109,7 +168,7 @@ public class EpubExample {
 
            // System.out.println(hierarchyNum + " / " + tocReference.getTitle() + " / " + tocReference.getResource().getHref() + " / " + tocReference.getResource().getSize());
             System.out.println(hierarchyNum + " / " + tocReference.getTitle());
-
+            tocTitleHierarchyMap.put(tocReference.getTitle(), hierarchyNum);
             if(!tocReference.getChildren().isEmpty()) {
                 printAllToc(tocReference.getChildren(), hierarchyNum+1);
             }

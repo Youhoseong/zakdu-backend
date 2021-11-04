@@ -14,6 +14,13 @@ public class MyTextPosition {
         this.text = text;
     }
 
+    public MyTextPosition(String text, int startPage, int endPage, int hierarchyNum) {
+        this.text = text;
+        this.startPage = startPage;
+        this.endPage = endPage;
+        this.hierarchyNum = hierarchyNum;
+    }
+
     public MyTextPosition(float x, float y, float endX, float fontSize, float height, String text, int id) {
         this.x = x;
         this.y = y;
