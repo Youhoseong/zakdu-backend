@@ -17,15 +17,15 @@ import java.io.IOException;
 public class BookRegisterController {
 
     @PostMapping
-    public String test(@RequestParam("files") MultipartFile file) throws IOException {
+    public String pdfBookMarkAnalysis(@RequestParam("files") MultipartFile file) throws IOException {
         System.out.println("file = " + file.getOriginalFilename());
         String filePath = System.getProperty("user.dir")+ "/pdfBook/";
-        System.out.println(System.getProperty("user.dir"));
+
         File dir = new File(filePath);
         if(!dir.exists())
             dir.mkdirs();
 
-        filePath=  filePath + file.getOriginalFilename();
+        filePath =  filePath + file.getOriginalFilename();
 
         File f = new File(filePath);
         file.transferTo(f);
