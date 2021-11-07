@@ -1,8 +1,7 @@
-package capstone.jakdu.ocrtest;
+package capstone.jakdu.Book.object;
 
 import lombok.Getter;
 import lombok.Setter;
-
 
 @Getter
 @Setter
@@ -43,6 +42,8 @@ public class MyTextPosition {
     private int startPage;
     private int endPage = -1;
     private int parentId = -1;
+
+    private boolean isConverted;
 
     public int removeStartPage() {
 
