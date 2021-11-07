@@ -188,17 +188,6 @@ public class ocrexample {
         pdfDoc.close();
         return chunkWordList;
 
-
-//        PDFBookToc pdfBookToc = PDFBookToc.builder()
-//                .bookId(1L)
-//                .hierarchyNum(1L)
-//                .startPage(1L)
-//                .endPage(3L)
-//                .parentId(0L)
-//                .build();
-//
-//        pdfBookTocRepository.save(pdfBookToc);
-
     }
 
     private List<MyTextPosition> getMyTextPositions(int i, int colNum, PDDocument pdfDoc) throws IOException {

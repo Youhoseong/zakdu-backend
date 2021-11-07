@@ -43,6 +43,8 @@ public class MyTextPosition {
     private int endPage = -1;
     private int parentId = -1;
 
+    private boolean isConverted;
+
     public int removeStartPage() {
 
         int n = this.text.length();
