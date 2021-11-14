@@ -26,10 +26,8 @@ public class BookRegisterService {
 
 
     public List<HierarchyObject> zakduAnalysisFromPdf(MultipartFile multipartFile, PDFBookTocAnalyzeDto pdfBookTocAnalyzeDto) throws IOException {
-        fileUpload(multipartFile);
-        String fileName = "./pdfBook/" + multipartFile.getOriginalFilename();
-        PDDocument document = PDDocument.load(new File(fileName));
 
+        PDDocument document = PDDocument.load(multipartFile.getInputStream());
 
 
         List<MyTextPosition> myTextPositions = getTocFromZakduAnalyze(document, pdfBookTocAnalyzeDto);
@@ -39,10 +37,8 @@ public class BookRegisterService {
     }
 
     public List<HierarchyObject> bookmarkAnalysisFromPdf(MultipartFile multipartFile) throws IOException {
-        fileUpload(multipartFile);
 
-        String fileName = "./pdfBook/" + multipartFile.getOriginalFilename();
-        PDDocument document = PDDocument.load(new File(fileName));
+        PDDocument document = PDDocument.load(multipartFile.getInputStream());
         PDDocumentOutline outline =  document.getDocumentCatalog().getDocumentOutline();
         List<HierarchyObject> hierarchyObjects = new ArrayList<>();
 
