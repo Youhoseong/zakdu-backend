@@ -1,9 +1,16 @@
 package capstone.jakdu.Book.service;
 
 
+import capstone.jakdu.Book.domain.FileStream;
+import capstone.jakdu.Book.domain.PDFBook;
+import capstone.jakdu.Book.domain.PDFBookToc;
 import capstone.jakdu.Book.object.*;
+import capstone.jakdu.Book.object.dto.BookRegisterDto;
 import capstone.jakdu.Book.object.dto.PDFBookTocAnalyzeDto;
+import capstone.jakdu.Book.repository.FileStreamRepository;
+import capstone.jakdu.Book.repository.PDFBookRepository;
 import capstone.jakdu.Book.repository.PDFBookTocRepository;
+import capstone.jakdu.Book.util.MD5Generator;
 import capstone.jakdu.Common.function.Regex;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -14,8 +21,10 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlin
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 @Service
@@ -23,7 +32,75 @@ import java.util.*;
 public class BookRegisterService {
 
     private final PDFBookTocRepository pdfBookTocRepository;
+    private final PDFBookRepository pdfBookRepository;
+    private final FileStreamRepository fileStreamRepository;
 
+    @Transactional(rollbackOn={Exception.class})
+    public void pdfBookRegister(BookRegisterDto bookRegisterDto, MultipartFile bookFile, MultipartFile bookCover) throws IOException, NoSuchAlgorithmException {
+
+        FileStream bookFileObj =  fileUpload(bookFile, "pdf");
+        FileStream bookCoverObj = fileUpload(bookCover, "pdfCover");
+        PDFBook pdfBook = PDFBook.of(
+                            bookRegisterDto.getCategory(),
+                            bookRegisterDto.getName(),
+                            bookRegisterDto.getAuthor(),
+                            bookRegisterDto.getPublisher(),
+                            bookRegisterDto.getPubDate(),
+                            bookRegisterDto.getIntro(),
+                            bookRegisterDto.getPrice(),
+                            bookRegisterDto.getRealStartPage(),
+                            bookFileObj,
+                            bookCoverObj);
+
+        List<HierarchyObject> hierarchyObjects = bookRegisterDto.getTocResult();
+        List<MyTextPosition> myTextPositions = new ArrayList<>();
+
+        convertToListData(hierarchyObjects, myTextPositions, 0);
+
+        for(int i=0; i<myTextPositions.size(); i++) {
+            System.out.println(myTextPositions.get(i).getHierarchyNum()+ " " + myTextPositions.get(i).getText());
+        }
+
+        pdfBookRepository.save(pdfBook);
+
+        pdfTocRegister(myTextPositions, pdfBook);
+    }
+
+    @Transactional(rollbackOn={Exception.class})
+    public void pdfTocRegister(List<MyTextPosition> myTextPositions, PDFBook pdfBook) {
+        for(int i=0; i<myTextPositions.size(); i++) {
+            MyTextPosition myTextPosition = myTextPositions.get(i);
+            PDFBookToc pdfBookToc = PDFBookToc.builder()
+                    .title(myTextPosition.getText())
+                    .pdfBook(pdfBook)
+                    .startPage(myTextPosition.getStartPage())
+                    .endPage(myTextPosition.getEndPage())
+                    .hierarchyNum(myTextPosition.getHierarchyNum())
+                    .build();
+
+            pdfBookTocRepository.save(pdfBookToc);
+        }
+
+    }
+
+    public void convertToListData(List<HierarchyObject> hierarchyObjects,  List<MyTextPosition> myTextPositions, int hierarchyNum) {
+
+        for(int i=0; i<hierarchyObjects.size(); i++) {
+            MyTextPosition myTextPosition = new MyTextPosition(
+                    hierarchyObjects.get(i).getText(),
+                    hierarchyObjects.get(i).getStartPage(),
+                    hierarchyObjects.get(i).getEndPage(),
+                    hierarchyNum);
+
+
+            myTextPositions.add(myTextPosition);
+
+            if(hierarchyObjects.get(i).getChilds() != null) {
+                convertToListData(hierarchyObjects.get(i).getChilds(), myTextPositions, hierarchyNum + 1);
+            }
+        }
+
+    }
 
     public List<HierarchyObject> zakduAnalysisFromPdf(MultipartFile multipartFile, PDFBookTocAnalyzeDto pdfBookTocAnalyzeDto) throws IOException {
 
@@ -84,20 +161,17 @@ public class BookRegisterService {
         }
     }
 
-
-
-
     public void resursiveConvert(List<HierarchyObject> hierarchyObjects, List<MyTextPosition> chunkWordList, int index) {
         if(index == chunkWordList.size()-1) {
             MyTextPosition myTextPosition1 = chunkWordList.get(index);
             myTextPosition1.setConverted(true);
-            HierarchyObject hierarchyObject = new HierarchyObject(index, myTextPosition1.getText(), null);
+            HierarchyObject hierarchyObject = new HierarchyObject(index, myTextPosition1.getText(), myTextPosition1.getStartPage(), myTextPosition1.getEndPage(), null);
             hierarchyObjects.add(hierarchyObject);
         } else {
 
             MyTextPosition myTextPosition1 = chunkWordList.get(index);
 
-            HierarchyObject hierarchyObject = new HierarchyObject(index, myTextPosition1.getText(), null);
+            HierarchyObject hierarchyObject = new HierarchyObject(index, myTextPosition1.getText(), myTextPosition1.getStartPage(), myTextPosition1.getEndPage(), null);
             hierarchyObjects.add(hierarchyObject);
             myTextPosition1.setConverted(true);
 
@@ -114,7 +188,7 @@ public class BookRegisterService {
                         myTextPosition2.setConverted(true);
 
                         myTextPosition1 = chunkWordList.get(i);
-                        hierarchyObject = new HierarchyObject(i, myTextPosition2.getText(), null);
+                        hierarchyObject = new HierarchyObject(i, myTextPosition2.getText(), myTextPosition2.getStartPage(), myTextPosition2.getEndPage(), null);
                         hierarchyObjects.add(hierarchyObject);
 
                     } else {
@@ -131,21 +205,41 @@ public class BookRegisterService {
 
     }
 
-    public void fileUpload(MultipartFile multipartFile) throws IOException {
-        String filePath = System.getProperty("user.dir")+ "/pdfBook/";
+    @Transactional(rollbackOn={Exception.class})
+    public FileStream fileUpload(MultipartFile multipartFile, String category) throws IOException, NoSuchAlgorithmException {
+
+        String fileName = new MD5Generator(multipartFile.getOriginalFilename()).toString();
+        String filePath = "";
+
+        if(category.equals("pdf"))
+            filePath =  System.getProperty("user.dir")+ "/pdfBook/";
+        else if(category.equals("epub"))
+            filePath =  System.getProperty("user.dir")+ "/epubBook/";
+        else if(category.equals("pdfCover"))
+            filePath =  System.getProperty("user.dir")+ "/pdfCover/";
+        else
+            filePath =  System.getProperty("user.dir")+ "/epubCover/";
 
         File dir = new File(filePath);
         if(!dir.exists())
             dir.mkdirs();
 
-        if(!new File(filePath + multipartFile.getOriginalFilename()).exists()) {
-            filePath =  filePath + multipartFile.getOriginalFilename();
+        FileStream fileStream = FileStream.builder()
+                .fileName(fileName)
+                .filePath(filePath)
+                .originalFileName(multipartFile.getOriginalFilename())
+                .build();
 
+
+        if(!new File(filePath + fileName).exists()) {
+            filePath =  filePath + fileName;
             File f = new File(filePath);
             multipartFile.transferTo(f);
 
+            fileStreamRepository.save(fileStream);
         }
 
+        return fileStream;
     }
 
     public List<MyTextPosition> getTocFromBookmark(PDDocument document, PDDocumentOutline outline) throws IOException {

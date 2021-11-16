@@ -1,6 +1,7 @@
 package capstone.jakdu.Book.controller;
 
 import capstone.jakdu.Book.object.HierarchyObject;
+import capstone.jakdu.Book.object.dto.BookRegisterDto;
 import capstone.jakdu.Book.object.dto.PDFBookTocAnalyzeDto;
 import capstone.jakdu.Book.service.BookRegisterService;
 import capstone.jakdu.Common.response.ResponseDto;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 @RestController
@@ -41,20 +43,35 @@ public class BookRegisterController {
         ObjectMapper mapper = new ObjectMapper();
 
         PDFBookTocAnalyzeDto bookTocAnalyzeDto = mapper.readValue(bookTocAnalyzeStr, PDFBookTocAnalyzeDto.class);
-        System.out.println("bookTocAnalyzeDto.getBookPDFRowCount() = " + bookTocAnalyzeDto.getBookPDFRowCount());
-        System.out.println("bookTocAnalyzeDto.getBookPDFTocEndPage() = " + bookTocAnalyzeDto.getBookPDFTocEndPage());
-        System.out.println("bookTocAnalyzeDto.getBookPDFTocStartPage() = " + bookTocAnalyzeDto.getBookPDFTocStartPage());
-        System.out.println("files.getOriginalFilename() = " + files.getOriginalFilename());
-
-
         List<HierarchyObject> hierarchyObjects = bookRegisterService.zakduAnalysisFromPdf(files, bookTocAnalyzeDto);
 
         return new ResponseDto(StatusEnum.OK, "success", hierarchyObjects);
     }
 
-    @PostMapping("/text3")
-    public void test3(@RequestParam("files")String bookTocAnalyzeDto) {
-        System.out.println("bookTocAnalyzeDto = " + bookTocAnalyzeDto);
+    @PostMapping
+    public ResponseDto registerBook(@RequestParam("bookRegisterDto") String bookRegisterDto,
+                                    @RequestParam("bookFile") MultipartFile bookFile,
+                                    @RequestParam("bookCover") MultipartFile bookCover) {
+
+        
+        return new ResponseDto(StatusEnum.OK, "success", null);
+    }
+
+
+    @PostMapping("/test2")
+    public void test(@RequestParam("bookRegisterDto") String bookRegisterStr, 
+                     @RequestParam("bookFile") MultipartFile bookFile, 
+                     @RequestParam("bookCover") MultipartFile bookCover) throws IOException, NoSuchAlgorithmException {
+        ObjectMapper mapper = new ObjectMapper();
+        System.out.println("bookRegisterStr = " + bookRegisterStr);
+        BookRegisterDto bookRegisterDto = mapper.readValue(bookRegisterStr, BookRegisterDto.class);
+
+        System.out.println("bookRegisterDto.getName() = " + bookRegisterDto.getName());
+        System.out.println("bookFile.getOriginalFilename() = " + bookFile.getOriginalFilename());
+        System.out.println("bookCover.getOriginalFilename() = " + bookCover.getOriginalFilename());
+
+        bookRegisterService.pdfBookRegister(bookRegisterDto, bookFile, bookCover);
+
 
     }
 
