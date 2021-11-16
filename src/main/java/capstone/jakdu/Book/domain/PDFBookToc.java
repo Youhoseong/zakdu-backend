@@ -18,7 +18,9 @@ public class PDFBookToc {
     private Long id;
 
     private int hierarchyNum;
-    private Long bookId;
+
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private PDFBook pdfBook;
 
     private int startPage;
     private int endPage;
