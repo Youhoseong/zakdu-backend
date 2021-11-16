@@ -4,6 +4,7 @@ package capstone.jakdu.Book.encryption;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDStream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +16,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Iterator;
 
 @SpringBootTest
@@ -25,13 +27,16 @@ class SecureRandomKeyGeneratorTest {
     @Autowired
     private AES256KeyGenerator keyGenerator;
 
-//    @Test
-//    public void 키_생성_테스트() {
-//        for(int i = 0; i < 10; i++) {
-//            byte[] s = keyGenerator.generate(32);
-//            System.out.println("s = " + Arrays.toString(s) + " " + new String(s, StandardCharsets.UTF_8));
-//        }
-//    }
+    @Test
+    public void 키_생성_테스트() {
+        for(int i = 0; i < 1000; i++) {
+            byte[] s = keyGenerator.generateKey();
+            String s1 = new String(s, StandardCharsets.UTF_8);
+            System.out.println("s = " + Arrays.toString(s) + " " + s1);
+            System.out.println("s1= " + Arrays.toString(s1.getBytes(StandardCharsets.UTF_8)));
+            Assertions.assertEquals(Arrays.toString(s), Arrays.toString(s1.getBytes(StandardCharsets.UTF_8)));
+        }
+    }
 
     public String decrypt(byte[] str, byte[] key, byte[] iv) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
