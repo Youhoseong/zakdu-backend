@@ -40,4 +40,7 @@ out/
 **/.DS_Store/**
 
 pdfBook/
+pdfCover/
+epubBook/
+epubCover/
 src/.DS_Store
