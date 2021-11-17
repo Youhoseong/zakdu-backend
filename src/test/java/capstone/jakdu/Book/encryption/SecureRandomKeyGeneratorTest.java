@@ -1,6 +1,8 @@
 package capstone.jakdu.Book.encryption;
 
 
+import capstone.jakdu.Book.domain.PDFKey;
+import capstone.jakdu.Book.repository.PDFKeyRepository;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDStream;
@@ -12,30 +14,56 @@ import org.springframework.boot.test.context.SpringBootTest;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.transaction.Transactional;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Optional;
 
 @SpringBootTest
 class SecureRandomKeyGeneratorTest {
-    //private SecureRandomKeyGenerator keyGenerator = new SecureRandomKeyGenerator();
     @Autowired
     private AESEncrypt encryptor;
     @Autowired
     private AES256KeyGenerator keyGenerator;
-
+    @Autowired
+    private PDFKeyRepository pdfKeyRepository;
     @Test
     public void 키_생성_테스트() {
         for(int i = 0; i < 1000; i++) {
             byte[] s = keyGenerator.generateKey();
-            String s1 = new String(s, StandardCharsets.UTF_8);
+            String s1 = new String(s, StandardCharsets.US_ASCII);
             System.out.println("s = " + Arrays.toString(s) + " " + s1);
-            System.out.println("s1= " + Arrays.toString(s1.getBytes(StandardCharsets.UTF_8)));
-            Assertions.assertEquals(Arrays.toString(s), Arrays.toString(s1.getBytes(StandardCharsets.UTF_8)));
+            System.out.println("s1= " + Arrays.toString(s1.getBytes(StandardCharsets.US_ASCII)));
+            Assertions.assertEquals(Arrays.toString(s), Arrays.toString(s1.getBytes(StandardCharsets.US_ASCII)));
         }
+    }
+
+    @Test
+    @Transactional
+    public void 키_DB_저장_유효성_테스트() {
+        for(int i = 0; i < 10; i++) {
+            byte[] keyBytes = keyGenerator.generateKey();
+            byte[] ivBytes = keyGenerator.generateIv();
+            String keyStr = new String(keyBytes, StandardCharsets.US_ASCII);
+            String ivStr = new String(ivBytes, StandardCharsets.US_ASCII);
+
+            PDFKey pdfKey = PDFKey.builder()
+                    .pageNum(i)
+                    .decKey(keyStr)
+                    .decIv(ivStr)
+                    .build();
+            pdfKeyRepository.save(pdfKey);
+            PDFKey key = pdfKeyRepository.findById(i + 1l).get();
+            System.out.println("Arrays.toString(keyBytes) = " + Arrays.toString(keyBytes));
+            System.out.println("key.getDecKey().getBytes(StandardCharsets.US_ASCII)) = " + Arrays.toString(key.getDecKey().getBytes(StandardCharsets.US_ASCII)));
+
+            Assertions.assertEquals(Arrays.toString(keyBytes), Arrays.toString(key.getDecKey().getBytes(StandardCharsets.US_ASCII)));
+        }
+
     }
 
     public String decrypt(byte[] str, byte[] key, byte[] iv) throws Exception {
