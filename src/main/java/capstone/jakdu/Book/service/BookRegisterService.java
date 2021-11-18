@@ -40,6 +40,12 @@ public class BookRegisterService {
 
         FileStream bookFileObj =  fileUpload(bookFile, "pdf");
         FileStream bookCoverObj = fileUpload(bookCover, "pdfCover");
+
+        PDDocument document = PDDocument.load(bookFile.getInputStream());
+        int pdfPageCount =  document.getNumberOfPages();
+        document.close();
+
+
         PDFBook pdfBook = PDFBook.of(
                             bookRegisterDto.getCategory(),
                             bookRegisterDto.getName(),
@@ -49,6 +55,7 @@ public class BookRegisterService {
                             bookRegisterDto.getIntro(),
                             bookRegisterDto.getPrice(),
                             bookRegisterDto.getRealStartPage(),
+                            pdfPageCount,
                             bookFileObj,
                             bookCoverObj);
 

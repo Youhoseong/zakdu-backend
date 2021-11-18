@@ -29,6 +29,7 @@ public class PDFBook {
     private String intro;
     private Long price;
     private int realStartPage;
+    private int pdfPageCount;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
@@ -46,6 +47,7 @@ public class PDFBook {
                    String intro,
                    Long price,
                    int realStartPage,
+                    int pdfPageCount,
                     FileStream bookFile,
                     FileStream bookCover) {
 
@@ -57,6 +59,7 @@ public class PDFBook {
         this.intro = intro;
         this.price = price;
         this.realStartPage = realStartPage;
+        this.pdfPageCount = pdfPageCount;
         this.bookFile = bookFile;
         this.bookCover = bookCover;
     }
@@ -70,11 +73,12 @@ public class PDFBook {
                              String intro,
                              Long price,
                              int realStartPage,
+                             int pdfPageCount,
                              FileStream bookFile,
                              FileStream bookCover) {
 
 
-        return new PDFBook(category, name, author, publisher, pubDate, intro, price, realStartPage, bookFile, bookCover);
+        return new PDFBook(category, name, author, publisher, pubDate, intro, price, realStartPage, pdfPageCount, bookFile, bookCover);
     }
 
 
