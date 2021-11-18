@@ -1,5 +1,8 @@
 package capstone.jakdu.Book.domain;
 
+import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import capstone.jakdu.Book.object.dto.BookRegisterDto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
@@ -19,7 +22,9 @@ public class PDFBook {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    
+//    List<PDFKey> keys = new ArrayList<>();
+
+
     private String category;
     private String name;
     private String author;
@@ -92,7 +97,7 @@ public class PDFBook {
     // 키 관리 . pdf 페이지 기준.
 
      // 구매 -> 실제
-    // List<key> keys; 
+    // List<key> keys;
     //toc
 
 
@@ -102,8 +107,8 @@ public class PDFBook {
     // 3. 프론트 복호화 정보 받고 저장 -> 뷰어 열 때 복호화 연동
     // 4  파일 다운로드 => 북스토어에 책 누르면 부분 구매랑 전체 구매 나눠져있는데 전체 구매에 연결해 두면될듯?
     // 5. async storage 생명 주기에 대한 대비.
-    
-    
+
+
 
 
 }
