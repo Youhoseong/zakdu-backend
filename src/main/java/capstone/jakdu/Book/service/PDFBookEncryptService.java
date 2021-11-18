@@ -31,21 +31,20 @@ import java.util.List;
 @Slf4j
 public class PDFBookEncryptService {
 
-    private AESEncrypt encryptor;
-    private AES256KeyGenerator keyGenerator;
-    private PDFKeyRepository pdfKeyRepository;
+    private final AESEncrypt encryptor;
+    private final AES256KeyGenerator keyGenerator;
+    private final PDFKeyRepository pdfKeyRepository;
     @Getter
     private final String encPdfPath = System.getProperty("user.dir") + "/encPdfBook/";
     /**
      * @param pdfBook
-     * @param encStartPage PDF 기준
-     * @param encEndPage PDF 기준
      *
      * 해당 PDF 파일을 암호화하고 "endPdfBook" 디렉토리에 저장. 파일 이름은 동일
      *
      */
     @Transactional(rollbackOn = Exception.class)
-    public void encryptPdfBook(PDFBook pdfBook, int encStartPage, int encEndPage) throws IOException, IllegalBlockSizeException, BadPaddingException {
+    public void encryptPdfBook(PDFBook pdfBook) throws IOException, IllegalBlockSizeException, BadPaddingException {
+
         FileStream bookFile = pdfBook.getBookFile();
         final String source = bookFile.getFilePath() + bookFile.getFileName();
         File pdfFile = new File(source);
@@ -57,6 +56,10 @@ public class PDFBookEncryptService {
             e.printStackTrace();
             throw new IOException("File : " + source + " does not exist");
         }
+
+        final int encStartPage = pdfBook.getRealStartPage();
+        // !
+        final int encEndPage = doc.getNumberOfPages() - 1;
 
         List<PDFKey> pdfKeyList = new ArrayList<>();
         for(int i = encStartPage - 1; i < encEndPage; i++) {
@@ -74,6 +77,7 @@ public class PDFBookEncryptService {
 
                 pdfDocPage.setContents(newStream);
                 PDFKey pdfKey = PDFKey.builder()
+                        .pdfBook(pdfBook)
                         .pageNum(i + 1)
                         .decKey(new String(aesKey, StandardCharsets.US_ASCII))
                         .decIv(new String(aesIv, StandardCharsets.US_ASCII))

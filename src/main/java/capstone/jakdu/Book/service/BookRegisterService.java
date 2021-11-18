@@ -21,6 +21,8 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlin
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
@@ -37,7 +39,7 @@ public class BookRegisterService {
     private final PDFBookEncryptService pdfBookEncryptService;
 
     @Transactional(rollbackOn={Exception.class})
-    public void pdfBookRegister(BookRegisterDto bookRegisterDto, MultipartFile bookFile, MultipartFile bookCover) throws IOException, NoSuchAlgorithmException {
+    public void pdfBookRegister(BookRegisterDto bookRegisterDto, MultipartFile bookFile, MultipartFile bookCover) throws IOException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
         FileStream bookFileObj =  fileUpload(bookFile, "pdf");
         FileStream bookCoverObj = fileUpload(bookCover, "pdfCover");
         PDFBook pdfBook = PDFBook.of(
@@ -61,6 +63,7 @@ public class BookRegisterService {
             System.out.println(myTextPositions.get(i).getHierarchyNum()+ " " + myTextPositions.get(i).getText());
         }
 
+        pdfBookEncryptService.encryptPdfBook(pdfBook);
         pdfBookRepository.save(pdfBook);
 
         pdfTocRegister(myTextPositions, pdfBook);

@@ -13,7 +13,6 @@ import javax.persistence.Id;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
 @Builder
 @Getter
 public class FileStream {

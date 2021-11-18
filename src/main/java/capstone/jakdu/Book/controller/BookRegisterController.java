@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -52,7 +54,7 @@ public class BookRegisterController {
     @PostMapping("/test2")
     public void registerBook(@RequestParam("bookRegisterDto") String bookRegisterStr,
                      @RequestParam("bookFile") MultipartFile bookFile, 
-                     @RequestParam("bookCover") MultipartFile bookCover) throws IOException, NoSuchAlgorithmException {
+                     @RequestParam("bookCover") MultipartFile bookCover) throws IOException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
         ObjectMapper mapper = new ObjectMapper();
         System.out.println("bookRegisterStr = " + bookRegisterStr);
         BookRegisterDto bookRegisterDto = mapper.readValue(bookRegisterStr, BookRegisterDto.class);
