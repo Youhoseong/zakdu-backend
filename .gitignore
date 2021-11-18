@@ -43,4 +43,5 @@ pdfBook/
 pdfCover/
 epubBook/
 epubCover/
+encPdfBook/
 src/.DS_Store
