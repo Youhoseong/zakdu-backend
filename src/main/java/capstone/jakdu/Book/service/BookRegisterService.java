@@ -124,7 +124,10 @@ public class BookRegisterService {
             return hierarchyObjects;
         } else {
             List<MyTextPosition> myTextPositions = getTocFromBookmark(document, outline);
-
+            
+            for(int i=0; i<myTextPositions.size(); i++) {
+                System.out.println("myTextPositions.get(i).getText() = " + myTextPositions.get(i).getText());
+            }
             hierarchyObjects = convertToHierarchyData(myTextPositions);
             printHirarchyChunkList(hierarchyObjects, "", 0);
 
@@ -383,7 +386,7 @@ public class BookRegisterService {
             Integer pageNumber = document.getDocumentCatalog().getPages().indexOf(currentPage) + 1;
 
             chunkWordList.add(new MyTextPosition(current.getTitle(), pageNumber,-1, hierarchyNum));
-
+            System.out.println("current.getTitle() = " + current.getTitle());
             printBookmark(chunkWordList, current, indentation + "    ", document, hierarchyNum+1);
             current = current.getNextSibling();
         }

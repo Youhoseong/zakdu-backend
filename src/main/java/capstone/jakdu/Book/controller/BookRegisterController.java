@@ -48,18 +48,9 @@ public class BookRegisterController {
         return new ResponseDto(StatusEnum.OK, "success", hierarchyObjects);
     }
 
-    @PostMapping
-    public ResponseDto registerBook(@RequestParam("bookRegisterDto") String bookRegisterDto,
-                                    @RequestParam("bookFile") MultipartFile bookFile,
-                                    @RequestParam("bookCover") MultipartFile bookCover) {
-
-        
-        return new ResponseDto(StatusEnum.OK, "success", null);
-    }
-
 
     @PostMapping("/test2")
-    public void test(@RequestParam("bookRegisterDto") String bookRegisterStr, 
+    public void registerBook(@RequestParam("bookRegisterDto") String bookRegisterStr,
                      @RequestParam("bookFile") MultipartFile bookFile, 
                      @RequestParam("bookCover") MultipartFile bookCover) throws IOException, NoSuchAlgorithmException {
         ObjectMapper mapper = new ObjectMapper();

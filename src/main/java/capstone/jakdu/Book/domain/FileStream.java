@@ -15,6 +15,7 @@ import javax.persistence.Id;
 @NoArgsConstructor
 @Getter
 @Builder
+@Getter
 public class FileStream {
 
     @Id
