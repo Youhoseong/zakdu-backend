@@ -48,8 +48,8 @@ class SecureRandomKeyGeneratorTest {
         for(int i = 0; i < 10; i++) {
             byte[] keyBytes = keyGenerator.generateKey();
             byte[] ivBytes = keyGenerator.generateIv();
-            String keyStr = new String(keyBytes, StandardCharsets.US_ASCII);
-            String ivStr = new String(ivBytes, StandardCharsets.US_ASCII);
+            String keyStr = new String(keyBytes, StandardCharsets.UTF_8);
+            String ivStr = new String(ivBytes, StandardCharsets.UTF_8);
 
             PDFKey pdfKey = PDFKey.builder()
                     .pageNum(i)
@@ -59,9 +59,9 @@ class SecureRandomKeyGeneratorTest {
             pdfKeyRepository.save(pdfKey);
             PDFKey key = pdfKeyRepository.findById(i + 1l).get();
             System.out.println("Arrays.toString(keyBytes) = " + Arrays.toString(keyBytes));
-            System.out.println("key.getDecKey().getBytes(StandardCharsets.US_ASCII)) = " + Arrays.toString(key.getDecKey().getBytes(StandardCharsets.US_ASCII)));
+            System.out.println("key.getDecKey().getBytes(StandardCharsets.US_ASCII)) = " + Arrays.toString(key.getDecKey().getBytes(StandardCharsets.UTF_8)));
 
-            Assertions.assertEquals(Arrays.toString(keyBytes), Arrays.toString(key.getDecKey().getBytes(StandardCharsets.US_ASCII)));
+            Assertions.assertEquals(Arrays.toString(keyBytes), Arrays.toString(key.getDecKey().getBytes(StandardCharsets.UTF_8)));
         }
 
     }
@@ -78,33 +78,33 @@ class SecureRandomKeyGeneratorTest {
         return s;
     }
 
-    @Test
-    public void PDF_특정_페이지_암호화() throws Exception {
-        String fileName = "./피디에프/문제집/example.pdf";
-        int page = 2;
-
-        File source = new File(fileName);
-        PDDocument pdfDoc = PDDocument.load(source);
-        PDPage pdfDocPage = pdfDoc.getPage(page);
-        Iterator<PDStream> contentStreams = pdfDocPage.getContentStreams();
-        while(contentStreams.hasNext()) {
-            PDStream stream = contentStreams.next();
-            byte[] key = keyGenerator.generateKey();
-            byte[] iv = keyGenerator.generateIv();
-
-            System.out.println("encrypter = " + encryptor.toString());
-            byte[] encrypt = encryptor.encrypt(stream.toByteArray(), key, iv);
-            String decrypt = decrypt(encrypt, key, iv);
-            System.out.println("decrypt = " + decrypt);
-            InputStream inputStream = new ByteArrayInputStream(encrypt);
-            PDStream newStream = new PDStream(pdfDoc, inputStream);
-
-            pdfDocPage.setContents(newStream);
-            //System.out.println("original = " + new String(stream.toByteArray()));
-            //System.out.println("encrypt = " + encrypt);
-            String s = new String(stream.toByteArray(), StandardCharsets.UTF_8);
-        }
-        pdfDoc.save("./피디에프/문제집/example_enc.pdf");
-        pdfDoc.close();
-    }
+//    @Test
+//    public void PDF_특정_페이지_암호화() throws Exception {
+//        String fileName = "./피디에프/문제집/example.pdf";
+//        int page = 2;
+//
+//        File source = new File(fileName);
+//        PDDocument pdfDoc = PDDocument.load(source);
+//        PDPage pdfDocPage = pdfDoc.getPage(page);
+//        Iterator<PDStream> contentStreams = pdfDocPage.getContentStreams();
+//        while(contentStreams.hasNext()) {
+//            PDStream stream = contentStreams.next();
+//            byte[] key = keyGenerator.generateKey();
+//            byte[] iv = keyGenerator.generateIv();
+//
+//            System.out.println("encrypter = " + encryptor.toString());
+//            byte[] encrypt = encryptor.encrypt(stream.toByteArray(), key, iv);
+//            String decrypt = decrypt(encrypt, key, iv);
+//            System.out.println("decrypt = " + decrypt);
+//            InputStream inputStream = new ByteArrayInputStream(encrypt);
+//            PDStream newStream = new PDStream(pdfDoc, inputStream);
+//
+//            pdfDocPage.setContents(newStream);
+//            //System.out.println("original = " + new String(stream.toByteArray()));
+//            //System.out.println("encrypt = " + encrypt);
+//            String s = new String(stream.toByteArray(), StandardCharsets.UTF_8);
+//        }
+//        pdfDoc.save("./피디에프/문제집/example_enc.pdf");
+//        pdfDoc.close();
+//    }
 }
