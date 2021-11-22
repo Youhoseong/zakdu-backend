@@ -1,13 +1,26 @@
 package capstone.jakdu.Book.object.dto;
 
+import capstone.jakdu.Common.ByteArraySerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
 public class PDFKeyDto {
-    private Long bookId;
-    private int page;
+    private int pageNum;
     private byte[] aesKey;
-    private byte[] aesIv;
+    private byte[] iv;
+
+    @JsonSerialize(using= ByteArraySerializer.class)
+    public byte[] getAesKey() {
+        return aesKey;
+    }
+
+    @JsonSerialize(using= ByteArraySerializer.class)
+    public byte[] getIv() {
+        return iv;
+    }
 }
+
+

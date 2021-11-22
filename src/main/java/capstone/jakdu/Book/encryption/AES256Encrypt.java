@@ -11,6 +11,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.util.Base64;
 
 @Component
 @RequiredArgsConstructor
@@ -20,7 +21,17 @@ public class AES256Encrypt implements AESEncrypt {
     private final String alg = "AES";
 
     @Override
-    public byte[] encrypt(byte[] bytes, byte[] key, byte[] iv) throws IllegalBlockSizeException, BadPaddingException {
+    public String encrypt(byte[] bytes, byte[] key, byte[] iv) throws IllegalBlockSizeException, BadPaddingException {
+//        Cipher cipher = null;
+//        try {
+//            cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+//        } catch (NoSuchAlgorithmException e) {
+//            e.printStackTrace();
+//            return null;
+//        } catch (NoSuchPaddingException e) {
+//            e.printStackTrace();
+//            return null;
+//        }
         SecretKeySpec keySpec = new SecretKeySpec(key, alg);
         IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
         try {
@@ -37,6 +48,7 @@ public class AES256Encrypt implements AESEncrypt {
             return null;
         }
 
-        return cipher.doFinal(bytes);
+        byte[] encryptedBytes = cipher.doFinal(bytes);
+        return Base64.getEncoder().encodeToString(encryptedBytes);
     }
 }

@@ -19,13 +19,16 @@ import java.util.Optional;
 public class BookDownloadService {
 
     private final PDFBookRepository pdfBookRepository;
+    private final PDFBookEncryptService pdfBookEncryptService;
 
     public BookDownloadDto downloadBook(Long bookId) {
         PDFBook pdfBook = pdfBookRepository.findById(bookId).get();
 
         FileStream bookFile = pdfBook.getBookFile();
-        String filePath = bookFile.getFilePath();
+
+        String filePath = pdfBookEncryptService.getEncPdfPath();
         String fileName = bookFile.getFileName();
+        String title = pdfBook.getName();
 
         FileInputStream inputStream;
         try {
@@ -43,7 +46,7 @@ public class BookDownloadService {
             return null;
         }
 
-        return new BookDownloadDto(bookId, "test book title",fileName, bytes);
+        return new BookDownloadDto(bookId, title, fileName, bytes);
     }
 
     public BookDownloadDto downloadBookTest(Long bookId) {

@@ -12,5 +12,5 @@ public interface AESEncrypt {
      * @throws IllegalBlockSizeException
      * @throws BadPaddingException
      */
-    byte[] encrypt(byte[] bytes, byte[] key, byte[] iv) throws IllegalBlockSizeException, BadPaddingException;
+    String encrypt(byte[] bytes, byte[] key, byte[] iv) throws IllegalBlockSizeException, BadPaddingException;
 }

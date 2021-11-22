@@ -21,13 +21,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/key")
 @RequiredArgsConstructor
 public class BookKeyController {
-
+//  유저 추가되면 추가 필요!
     private final PDFKeyRepository pdfKeyRepository;
     private final PDFBookRepository pdfBookRepository;
 
@@ -38,16 +40,18 @@ public class BookKeyController {
         List<Boolean> userPageList = new ArrayList<>();
         List<Integer> boughtPageList = new ArrayList<>();
         final int startPage = pdfBook.getRealStartPage();
-        final int endPage = 135;
+        final int endPage = 178;
 
         for (int i = 0; i < endPage; i++) {
-            int test = i % 10;
-            if(test == 7 || test == 8 || test == 9) {
-                userPageList.add(false);
-            }
-            else{
-                userPageList.add(true);
-            }
+            userPageList.add(true);
+            // 여기서 true들어가면 해당 페이지 키 포함. 아니면 x
+//            int test = i % 10;
+//            if(test == 7 || test == 8 || test == 9) {
+//                userPageList.add(false);
+//            }
+//            else{
+//                userPageList.add(true);
+//            }
         }
         PurchasedPageList purchasedPageList = PurchasedPageList.builder()
                 .pageList(userPageList)
@@ -55,7 +59,7 @@ public class BookKeyController {
                 .build();
 
         userPageList = purchasedPageList.getPageList();
-        for (int i = startPage; i < endPage - 1; i++) {
+        for (int i = startPage; i < endPage; i++) {
             if(userPageList.get(i)) {
                 boughtPageList.add(i);
             }
@@ -64,10 +68,10 @@ public class BookKeyController {
         List<PDFKey> keys = pdfKeyRepository.findAllByPageNumInOrderByPageNumAsc(boughtPageList);
         List<PDFKeyDto> keyDtos = new ArrayList<>();
         keys.forEach(key -> {
-            keyDtos.add(new PDFKeyDto(id,
+            keyDtos.add(new PDFKeyDto(
                     key.getPageNum(),
-                    key.getDecKey().getBytes(StandardCharsets.US_ASCII),
-                    key.getDecIv().getBytes(StandardCharsets.US_ASCII)));
+                    key.getDecKey().getBytes(),
+                    key.getDecIv().getBytes()));
         });
 
         //        final int endPage = pdfBook.getEndPage();
