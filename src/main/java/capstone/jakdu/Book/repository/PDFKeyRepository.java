@@ -10,5 +10,7 @@ import java.util.Optional;
 
 public interface PDFKeyRepository extends JpaRepository<PDFKey, Long> {
     Optional<PDFKey> findById(Long id);
+    Optional<PDFKey> findByPdfBookIdAndPageNum(Long bookId, int pageNum);
+    //List<PDFKey> findAllByBookId(Long bookId);
     List<PDFKey> findAllByPageNumInOrderByPageNumAsc(Collection<Integer> pageNums);
 }

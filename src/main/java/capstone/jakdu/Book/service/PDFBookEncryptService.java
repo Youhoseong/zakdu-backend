@@ -57,7 +57,7 @@ public class PDFBookEncryptService {
             throw new IOException("File : " + source + " does not exist");
         }
 
-        final int encStartPage = pdfBook.getRealStartPage();
+        final int encStartPage = Math.max(pdfBook.getRealStartPage(), 2);
         // !
         final int encEndPage = doc.getNumberOfPages() - 1;
 
@@ -71,16 +71,17 @@ public class PDFBookEncryptService {
                 byte[] aesKey = keyGenerator.generateKey();
                 byte[] aesIv = keyGenerator.generateIv();
 
-                byte[] encrypt = encryptor.encrypt(bytes, aesKey, aesIv);
-                InputStream inputStream = new ByteArrayInputStream(encrypt);
+                String encrypt = encryptor.encrypt(bytes, aesKey, aesIv);
+
+                InputStream inputStream = new ByteArrayInputStream(encrypt.getBytes());
                 PDStream newStream = new PDStream(doc, inputStream);
 
                 pdfDocPage.setContents(newStream);
                 PDFKey pdfKey = PDFKey.builder()
                         .pdfBook(pdfBook)
-                        .pageNum(i + 1)
-                        .decKey(new String(aesKey, StandardCharsets.US_ASCII))
-                        .decIv(new String(aesIv, StandardCharsets.US_ASCII))
+                        .pageNum(i)
+                        .decKey(new String(aesKey, StandardCharsets.UTF_8))
+                        .decIv(new String(aesIv, StandardCharsets.UTF_8))
                         .build();
                 pdfKeyList.add(pdfKey);
             }

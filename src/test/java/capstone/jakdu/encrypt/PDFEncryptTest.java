@@ -47,6 +47,18 @@ public class PDFEncryptTest {
         return s;
     }
 
+    public String decrypt(String str, String key, String iv) throws Exception {
+        Cipher cipher = Cipher.getInstance(alg);
+        SecretKeySpec keySpec = new SecretKeySpec(key.getBytes(), "AES");
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(iv.getBytes());
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivParameterSpec);
+
+        byte[] decoded = Base64.getDecoder().decode(str);
+        byte[] decrypted = cipher.doFinal(decoded);
+        String s = new String(decrypted);
+        return s;
+    }
+
     @Test
     public void 암호화_복호화_테스트() throws Exception {
         String s = "암호화 복호화 테스트 문자열";
@@ -60,7 +72,7 @@ public class PDFEncryptTest {
 
     @Test
     public void 암호화된_PDF_복호화() throws Exception {
-        String fileName = "9종교과서시크릿수학1-본문(학생용)_enc.pdf";
+        String fileName = "./v";
         int page = 0;
         File source = new File(fileName);
 
@@ -151,9 +163,9 @@ public class PDFEncryptTest {
 
     @Test
     public void 여러_페이지_암호화_테스트() throws Exception {
-        String fileName = "./피디에프/문제집/9종교과서시크릿수학1-본문(학생용).pdf";
+        String fileName = "./피디에프/문제집/example.pdf";
         final int startPage = 1;
-        final int endPage = 70;
+        final int endPage = 178;
         File source = new File(fileName);
         PDDocument pdfDoc = PDDocument.load(source);
         for (int i = startPage; i < endPage; i++) {
@@ -173,15 +185,15 @@ public class PDFEncryptTest {
             }
 
         }
-        pdfDoc.save("./피디에프/문제집/9종교과서시크릿수학1-본문(학생용)_enc.pdf");
+        pdfDoc.save("./피디에프/문제집/example_enc.pdf");
         pdfDoc.close();
     }
 
     @Test
     public void 여러_페이지_복호화_테스트() throws Exception {
-        String fileName = "./피디에프/문제집/9종교과서시크릿수학1-본문(학생용)_enc.pdf";
+        String fileName = "./피디에프/문제집/example_enc2.pdf";
         final int startPage = 1;
-        final int endPage = 70;
+        final int endPage = 17;
         File source = new File(fileName);
         PDDocument pdfDoc = PDDocument.load(source);
         for (int i = startPage; i < endPage; i++) {
@@ -202,7 +214,7 @@ public class PDFEncryptTest {
             }
 
         }
-        pdfDoc.save("./피디에프/문제집/9종교과서시크릿수학1-본문(학생용)_dec.pdf");
+        pdfDoc.save("./피디에프/문제집/example_dec2.pdf");
         pdfDoc.close();
     }
 }
