@@ -30,7 +30,7 @@ public class PDFBook {
     private String author;
     private String publisher;
     private Date pubDate;
-
+    @Column(length = 2000)
     private String intro;
     private Long price;
     private int realStartPage;
