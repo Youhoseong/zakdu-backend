@@ -39,7 +39,7 @@ public class BookDownloadService {
     }
 
     public byte[] downloadLockPdf() throws IOException {
-        final String filePath = System.getProperty("user.dir") + "/피디에프/" + "lockpage.pdf";
+        final String filePath = System.getProperty("user.dir") + "/lockfile/" + "lockpage.pdf";
         File lockPdfFile = new File(filePath);
         Path path = Paths.get(lockPdfFile.getAbsolutePath());
         ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
