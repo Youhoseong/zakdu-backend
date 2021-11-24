@@ -19,7 +19,7 @@ public class PDFBookToc {
 
     private int hierarchyNum;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private PDFBook pdfBook;
 
     private int startPage;

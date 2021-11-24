@@ -42,6 +42,12 @@ public class BookRegisterService {
     public void pdfBookRegister(BookRegisterDto bookRegisterDto, MultipartFile bookFile, MultipartFile bookCover) throws IOException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
         FileStream bookFileObj =  fileUpload(bookFile, "pdf");
         FileStream bookCoverObj = fileUpload(bookCover, "pdfCover");
+
+        PDDocument document = PDDocument.load(bookFile.getInputStream());
+        int pdfPageCount =  document.getNumberOfPages();
+        document.close();
+
+
         PDFBook pdfBook = PDFBook.of(
                             bookRegisterDto.getCategory(),
                             bookRegisterDto.getName(),
@@ -51,6 +57,7 @@ public class BookRegisterService {
                             bookRegisterDto.getIntro(),
                             bookRegisterDto.getPrice(),
                             bookRegisterDto.getRealStartPage(),
+                            pdfPageCount,
                             bookFileObj,
                             bookCoverObj);
 
