@@ -60,12 +60,13 @@ public class BookKeyController {
 
         userPageList = purchasedPageList.getPageList();
         for (int i = startPage; i < endPage; i++) {
-            if(userPageList.get(i)) {
+            int test = i % 10;
+            if(userPageList.get(i) && test != 7 && test != 8 && test != 9) {
                 boughtPageList.add(i);
             }
         }
 
-        List<PDFKey> keys = pdfKeyRepository.findAllByPageNumInOrderByPageNumAsc(boughtPageList);
+        List<PDFKey> keys = pdfKeyRepository.findAllByPdfBookIdAndPageNumInOrderByPageNumAsc(id, boughtPageList);
         List<PDFKeyDto> keyDtos = new ArrayList<>();
         keys.forEach(key -> {
             keyDtos.add(new PDFKeyDto(

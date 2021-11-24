@@ -12,5 +12,5 @@ public interface PDFKeyRepository extends JpaRepository<PDFKey, Long> {
     Optional<PDFKey> findById(Long id);
     Optional<PDFKey> findByPdfBookIdAndPageNum(Long bookId, int pageNum);
     //List<PDFKey> findAllByBookId(Long bookId);
-    List<PDFKey> findAllByPageNumInOrderByPageNumAsc(Collection<Integer> pageNums);
+    List<PDFKey> findAllByPdfBookIdAndPageNumInOrderByPageNumAsc(Long bookId, Collection<Integer> pageNums);
 }

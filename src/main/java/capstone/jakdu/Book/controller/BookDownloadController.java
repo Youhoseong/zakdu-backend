@@ -19,21 +19,8 @@ public class BookDownloadController {
 
     private final BookDownloadService bookDownloadService;
 
-    @GetMapping("/pdf_test")
-    public ResponseDto downloadPdfBookTest(@RequestParam("id") Long id) {
-        // 유저 구매여부 확인
-
-        BookDownloadDto bookDownloadDto = bookDownloadService.downloadBookTest(id);
-        if(bookDownloadDto == null) {
-            return new ResponseDto(StatusEnum.INTERNAL_SERVER_ERROR, "internal server error", null);
-        }
-        else {
-            return new ResponseDto(StatusEnum.OK, "success", bookDownloadDto);
-        }
-    }
-
     @GetMapping("/pdf")
-    public ResponseDto downloadPdfBook(@RequestParam("id") Long id) {
+    public ResponseDto downloadPdfBook(@RequestParam("id") Long id) throws IOException {
         // 유저 구매여부 확인, 유저 정보도 추가로 받아야 함
         BookDownloadDto bookDownloadDto = bookDownloadService.downloadBook(id);
 
@@ -43,5 +30,11 @@ public class BookDownloadController {
         else {
             return new ResponseDto(StatusEnum.OK, "success", bookDownloadDto);
         }
+    }
+
+    @GetMapping("/pdf_lock")
+    public ResponseDto downloadPdfBook() throws IOException {
+        byte[] lockPdf = bookDownloadService.downloadLockPdf();
+        return new ResponseDto(StatusEnum.OK, "success", lockPdf);
     }
 }
