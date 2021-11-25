@@ -9,21 +9,13 @@ import capstone.jakdu.Book.repository.PDFKeyRepository;
 import capstone.jakdu.Common.response.ResponseDto;
 import capstone.jakdu.Common.response.StatusEnum;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.io.IOUtils;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/key")
@@ -60,12 +52,13 @@ public class BookKeyController {
 
         userPageList = purchasedPageList.getPageList();
         for (int i = startPage; i < endPage; i++) {
-            if(userPageList.get(i)) {
+            int test = i % 10;
+            if(userPageList.get(i) && test != 7 && test != 8 && test != 9) {
                 boughtPageList.add(i);
             }
         }
 
-        List<PDFKey> keys = pdfKeyRepository.findAllByPageNumInOrderByPageNumAsc(boughtPageList);
+        List<PDFKey> keys = pdfKeyRepository.findAllByPdfBookIdAndPageNumInOrderByPageNumAsc(id, boughtPageList);
         List<PDFKeyDto> keyDtos = new ArrayList<>();
         keys.forEach(key -> {
             keyDtos.add(new PDFKeyDto(

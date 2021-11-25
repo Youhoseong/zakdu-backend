@@ -47,9 +47,11 @@ dependencies {
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
 	// https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox
 	implementation 'org.apache.pdfbox:pdfbox:2.0.19'
 	implementation 'com.positiondev.epublib:epublib-core:3.1'
+<<<<<<< HEAD
 	implementation group: 'net.sourceforge.tess4j', name: 'tess4j', version: '4.5.4'
 	// jwt 관련 의존성
 	implementation 'io.jsonwebtoken:jjwt:0.9.1'
@@ -62,6 +64,12 @@ dependencies {
 //	compile group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.11.2'
 //	runtime group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.11.2'
 //	runtime group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.11.2'
+=======
+
+
+
+	implementation 'io.jsonwebtoken:jjwt:0.9.1'
+>>>>>>> upstream1/develop
 
 }
 
