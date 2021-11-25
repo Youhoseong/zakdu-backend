@@ -49,6 +49,7 @@ public class UserApiController {
 //                    new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
 //            );
         } catch (Exception ex) {
+            ex.printStackTrace();
             throw new Exception("inavalid username/password");
         }
         return jwtUtil.generateToken(authRequest.getUsername());

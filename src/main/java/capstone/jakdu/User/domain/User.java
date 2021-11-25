@@ -36,7 +36,7 @@ public class User {
     public User(String username, String email, String password, String userType, Long point){
         this.username = username;
         this.email = email;
-        this.password = password;
+        this.password = "{noop}"+password;
         this.userType = userType;
         this.point = point;
     }
