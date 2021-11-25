@@ -74,7 +74,7 @@ public class EPUBEncryptTest {
 
         Path zipFilePath = Paths.get(encFilePath);
 
-        try( FileSystem fs = FileSystems.newFileSystem(zipFilePath, null)){
+        try( FileSystem fs = FileSystems.newFileSystem(zipFilePath, (ClassLoader) null)){
             Path fileInsideZipPath = fs.getPath("/OEBPS/Cath_9780553418828_epub3_itr_r1.xhtml");
             InputStream inputStream = Files.newInputStream(fileInsideZipPath);
             byte[] bytes = inputStream.readAllBytes();
@@ -108,7 +108,7 @@ public class EPUBEncryptTest {
 
         Path zipFilePath = Paths.get(encFilePath);
 
-        try( FileSystem fs = FileSystems.newFileSystem(zipFilePath, null)){
+        try( FileSystem fs = FileSystems.newFileSystem(zipFilePath, (ClassLoader) null)){
             Path fileInsideZipPath = fs.getPath("/OEBPS/Cath_9780553418828_epub3_itr_r1.xhtml");
             InputStream inputStream = Files.newInputStream(fileInsideZipPath);
             byte[] bytes = inputStream.readAllBytes();
