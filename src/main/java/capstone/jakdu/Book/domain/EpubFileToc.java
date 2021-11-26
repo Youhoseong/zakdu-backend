@@ -2,6 +2,7 @@ package capstone.jakdu.Book.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
@@ -14,6 +15,7 @@ import javax.persistence.Id;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
 public class EpubFileToc {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
