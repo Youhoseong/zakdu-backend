@@ -31,6 +31,11 @@ public class BookPurchaseController {
         List<BookResponseDto> bookResponseDtoList = bookPurchaseService.findAllPDFBook();
         return new ResponseDto(StatusEnum.OK, "success", bookResponseDtoList);
     }
+    @PostMapping("/test")
+    public String test2() {
+        System.out.println("welcome");
+        return "ok";
+    }
 
     @GetMapping("/book-toc/{bookId}")
     public ResponseDto bookTocList(@PathVariable Long bookId) {
