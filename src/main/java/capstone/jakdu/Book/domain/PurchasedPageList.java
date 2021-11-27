@@ -10,16 +10,38 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
+@Builder
 public class PurchasedPageList {
+
+    public PurchasedPageList(PDFBook pdfBook, List<Boolean> purchasePageList) {
+        this.pdfBook = pdfBook;
+        this.pageList = purchasePageList;
+        this.userId = 1L;
+    }
+
+    public static PurchasedPageList of(PDFBook pdfBook, List<Boolean> purchasePageList) {
+        return new PurchasedPageList(pdfBook,purchasePageList);
+    }
+
+    public void pageUpdate(List<Boolean> pageList) {
+        this.pageList = pageList;
+    }
+
+
     @Id
-    Long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+
+    private Long userId;
+
     // user relationship
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    PDFBook pdfBook;
+    private PDFBook pdfBook;
+
     @ElementCollection
     private List<Boolean> pageList = new ArrayList<>();
 }

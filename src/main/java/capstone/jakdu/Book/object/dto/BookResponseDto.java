@@ -26,6 +26,7 @@ public class BookResponseDto {
         this.bookCoverResource = resource;
         this.realStartPage = pdfBook.getRealStartPage();
         this.pdfPageCount = pdfBook.getPdfPageCount();
+        this.type = "pdf";
     }
     private Long id;
     private String category;
@@ -37,6 +38,7 @@ public class BookResponseDto {
     private Long price;
     private int realStartPage;
     private int pdfPageCount;
+    private String type;
 
     private byte[] bookCoverResource;
 
