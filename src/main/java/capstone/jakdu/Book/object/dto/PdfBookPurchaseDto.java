@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @Getter
-public class BookPurchaseDto {
+public class PdfBookPurchaseDto {
     //private String name;
-    private List<HierarchyObject> bookToc;
+    private List<Boolean> purchasePageList;
 }
