@@ -29,14 +29,13 @@ public class BookDownloadService {
 
         String filePath = pdfBookEncryptService.getEncPdfPath();
         String fileName = bookFile.getFileName();
-        int realStartPage = pdfBook.getRealStartPage();
-        String title = pdfBook.getName();
+        String coverFileName = pdfBook.getBookCover().getFileName();
 
         File pdfBookFile = new File(filePath + fileName);
         Path path = Paths.get(pdfBookFile.getAbsolutePath());
         ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
-        return new BookDownloadDto(bookId, title, fileName, realStartPage, resource.getByteArray());
+        return new BookDownloadDto(bookId, fileName, coverFileName, resource.getByteArray());
     }
 
     public byte[] downloadLockPdf() throws IOException {
