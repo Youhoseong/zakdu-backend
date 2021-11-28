@@ -19,14 +19,19 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocume
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineNode;
 import org.springframework.stereotype.Service;
+
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
-import javax.transaction.Transactional;
+
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -38,15 +43,16 @@ public class BookRegisterService {
     private final FileStreamRepository fileStreamRepository;
     private final PDFBookEncryptService pdfBookEncryptService;
 
-    @Transactional(rollbackOn={Exception.class})
+    @Transactional(rollbackFor = {Exception.class})
     public void pdfBookRegister(BookRegisterDto bookRegisterDto, MultipartFile bookFile, MultipartFile bookCover) throws IOException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
+        PDDocument document = PDDocument.load(bookFile.getInputStream());
+        System.out.println("bookFile.getResource() = " + bookFile.getResource());
         FileStream bookFileObj =  fileUpload(bookFile, "pdf");
         FileStream bookCoverObj = fileUpload(bookCover, "pdfCover");
 
-        PDDocument document = PDDocument.load(bookFile.getInputStream());
+
         int pdfPageCount =  document.getNumberOfPages();
         document.close();
-
 
         PDFBook pdfBook = PDFBook.of(
                             bookRegisterDto.getCategory(),
@@ -76,7 +82,7 @@ public class BookRegisterService {
         pdfTocRegister(myTextPositions, pdfBook);
     }
 
-    @Transactional(rollbackOn={Exception.class})
+    @Transactional(rollbackFor = {Exception.class})
     public void pdfTocRegister(List<MyTextPosition> myTextPositions, PDFBook pdfBook) {
         for(int i=0; i<myTextPositions.size(); i++) {
             MyTextPosition myTextPosition = myTextPositions.get(i);
@@ -218,12 +224,12 @@ public class BookRegisterService {
 
     }
 
-    @Transactional(rollbackOn={Exception.class})
+    @Transactional(rollbackFor = {Exception.class})
     public FileStream fileUpload(MultipartFile multipartFile, String category) throws IOException, NoSuchAlgorithmException {
 
-        String fileName = new MD5Generator(multipartFile.getOriginalFilename()).toString();
+        String fileName = new MD5Generator(multipartFile.getOriginalFilename() + LocalDateTime.now()).toString();
         String filePath = "";
-
+        System.out.println("fileName = " + fileName);
         if(category.equals("pdf"))
             filePath =  System.getProperty("user.dir")+ "/pdfBook/";
         else if(category.equals("epub"))
@@ -244,13 +250,13 @@ public class BookRegisterService {
                 .build();
 
 
-        if(!new File(filePath + fileName).exists()) {
-            filePath =  filePath + fileName;
-            File f = new File(filePath);
-            multipartFile.transferTo(f);
 
-            fileStreamRepository.save(fileStream);
-        }
+        filePath =  filePath + fileName;
+        File f = new File(filePath);
+        multipartFile.transferTo(f);
+
+        fileStreamRepository.save(fileStream);
+
 
         return fileStream;
     }
@@ -456,7 +462,6 @@ public class BookRegisterService {
         return -1;
 
     }
-
 
     private void setStartPageNumber(List<MyTextPosition> chunkWordList) {
         for(int j=0; j<chunkWordList.size(); j++) {
