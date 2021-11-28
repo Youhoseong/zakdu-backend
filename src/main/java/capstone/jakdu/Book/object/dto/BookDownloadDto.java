@@ -7,9 +7,8 @@ import lombok.Data;
 @AllArgsConstructor
 public class BookDownloadDto {
     private long id;
-    private String title;
     private String fileName;
-    private int realStartPage;
+    private String coverFileName;
     // 표지파일 추가?
 //    private FileType fileType;
     private byte[] bytes;
