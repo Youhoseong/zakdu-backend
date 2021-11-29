@@ -19,9 +19,9 @@ public class JakduApplication {
 	private UserInfoRepository repository;
 	@PostConstruct
 	public void initUsers() {
-		User user1 = new User("javatechie", "email","password", "customer", 10000L);
-		User user2 = new User("user1", "email","pwd1", "customer",10000L);
-		User user3 = new User("user2", "email","pwd2", "customer",10000L);
+		User user1 = new User("javatechie", "email1@gmail.com","password", "customer", 10000L);
+		User user2 = new User("user1", "email2@gmail.com","pwd1", "seller",10000L);
+		User user3 = new User("user2", "email3@gmail.com","pwd2", "customer",10000L);
 		repository.save(user1);
 		repository.save(user2);
 		repository.save(user3);
