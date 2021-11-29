@@ -3,8 +3,6 @@ package capstone.jakdu.encrypt;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDStream;
-import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +15,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Iterator;
 
-public class EncryptTest {
+public class PDFEncryptTest {
     //PKCS7이 적용됨 프론트에선 PKCS7모드 사용해야 할듯?
     private final String alg = "AES/CBC/PKCS5Padding";
     private final String aesKey = "abcdefghijklmnopqrstuvwxyzabcdef";
@@ -49,6 +47,18 @@ public class EncryptTest {
         return s;
     }
 
+    public String decrypt(String str, String key, String iv) throws Exception {
+        Cipher cipher = Cipher.getInstance(alg);
+        SecretKeySpec keySpec = new SecretKeySpec(key.getBytes(), "AES");
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(iv.getBytes());
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivParameterSpec);
+
+        byte[] decoded = Base64.getDecoder().decode(str);
+        byte[] decrypted = cipher.doFinal(decoded);
+        String s = new String(decrypted);
+        return s;
+    }
+
     @Test
     public void 암호화_복호화_테스트() throws Exception {
         String s = "암호화 복호화 테스트 문자열";
@@ -62,7 +72,7 @@ public class EncryptTest {
 
     @Test
     public void 암호화된_PDF_복호화() throws Exception {
-        String fileName = "9종교과서시크릿수학1-본문(학생용)_enc.pdf";
+        String fileName = "./v";
         int page = 0;
         File source = new File(fileName);
 
@@ -89,8 +99,8 @@ public class EncryptTest {
 
     @Test
     public void PDF_특정_페이지_암호화() throws Exception {
-        String fileName = "example.pdf";
-        int page = 1;
+        String fileName = "./피디에프/문제집/example.pdf";
+        int page = 2;
 
         File source = new File(fileName);
         PDDocument pdfDoc = PDDocument.load(source);
@@ -108,7 +118,7 @@ public class EncryptTest {
             System.out.println("encrypt = " + encrypt);
             String s = new String(stream.toByteArray(), StandardCharsets.UTF_8);
         }
-        pdfDoc.save("example_enc.pdf");
+        pdfDoc.save("./피디에프/문제집/example_enc.pdf");
         pdfDoc.close();
     }
 
@@ -153,11 +163,12 @@ public class EncryptTest {
 
     @Test
     public void 여러_페이지_암호화_테스트() throws Exception {
-        String fileName = "9종교과서시크릿수학1-본문(학생용).pdf";
-
+        String fileName = "./피디에프/문제집/example.pdf";
+        final int startPage = 1;
+        final int endPage = 178;
         File source = new File(fileName);
         PDDocument pdfDoc = PDDocument.load(source);
-        for (int i = 0; i < 3; i++) {
+        for (int i = startPage; i < endPage; i++) {
             PDPage pdfDocPage = pdfDoc.getPage(i);
             Iterator<PDStream> contentStreams = pdfDocPage.getContentStreams();
             while(contentStreams.hasNext()) {
@@ -174,17 +185,18 @@ public class EncryptTest {
             }
 
         }
-        pdfDoc.save("9종교과서시크릿수학1-본문(학생용)_enc.pdf");
+        pdfDoc.save("./피디에프/문제집/example_enc.pdf");
         pdfDoc.close();
     }
 
     @Test
     public void 여러_페이지_복호화_테스트() throws Exception {
-        String fileName = "9종교과서시크릿수학1-본문(학생용)_enc.pdf";
-
+        String fileName = "./피디에프/문제집/example_enc2.pdf";
+        final int startPage = 1;
+        final int endPage = 17;
         File source = new File(fileName);
         PDDocument pdfDoc = PDDocument.load(source);
-        for (int i = 0; i < 3; i++) {
+        for (int i = startPage; i < endPage; i++) {
             PDPage pdfDocPage = pdfDoc.getPage(i);
             Iterator<PDStream> contentStreams = pdfDocPage.getContentStreams();
             while(contentStreams.hasNext()) {
@@ -202,7 +214,7 @@ public class EncryptTest {
             }
 
         }
-        pdfDoc.save("9종교과서시크릿수학1-본문(학생용)_dec.pdf");
+        pdfDoc.save("./피디에프/문제집/example_dec2.pdf");
         pdfDoc.close();
     }
 }

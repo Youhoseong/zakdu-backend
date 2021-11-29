@@ -1,5 +1,6 @@
 package capstone.jakdu.Book.object;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 

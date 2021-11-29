@@ -58,7 +58,7 @@ public class ocrexample {
         for(int i=0; i<chunkWordList.size(); i++) {
             MyTextPosition myTextPosition = chunkWordList.get(i);
             PDFBookToc pdfBookToc = PDFBookToc.builder()
-                    .bookId(1L)
+                    .id(1L)
                     .hierarchyNum(myTextPosition.getHierarchyNum())
                     .startPage(myTextPosition.getStartPage())
                     .endPage(myTextPosition.getEndPage())

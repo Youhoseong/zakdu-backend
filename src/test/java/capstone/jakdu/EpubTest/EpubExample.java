@@ -42,7 +42,7 @@ public class EpubExample {
     public void epubLibTest() throws IOException {
         // read epub file
         EpubReader epubReader = new EpubReader();
-        Book book = epubReader.readEpub(new FileInputStream("pg48433-images.epub"));
+        Book book = epubReader.readEpub(new FileInputStream("./이펍/Weapons of Math Destruction How Big Data Increases Inequality and Threatens Democracy by Cathy O’Neil (z-lib.org)_enc.epub"));
         TableOfContents tableOfContents = book.getTableOfContents();
         
         
@@ -57,6 +57,7 @@ public class EpubExample {
         System.out.println("href = " + href);
 
         book.getContents().forEach(content -> {
+
             System.out.println("content.getHref() = " + content.getHref());
         });
 
