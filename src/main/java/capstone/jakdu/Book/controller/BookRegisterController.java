@@ -28,7 +28,6 @@ public class BookRegisterController {
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("/bookmark-analyze")
     public ResponseDto tocAnalyzeWithBookMark(@RequestParam("files") MultipartFile file) throws IOException {
-
         System.out.println("file = " + file.getOriginalFilename());
         List<HierarchyObject> hierarchyObjects = bookRegisterService.bookmarkAnalysisFromPdf(file);
 
@@ -41,7 +40,6 @@ public class BookRegisterController {
 
     @PostMapping("/zakdu-analyze")
     public ResponseDto tocAnalyzeWithZakduAlgorithm(@RequestParam("bookTocAnalyzeDto") String bookTocAnalyzeStr, @RequestParam("files") MultipartFile files) throws IOException {
-
         ObjectMapper mapper = new ObjectMapper();
 
         PDFBookTocAnalyzeDto bookTocAnalyzeDto = mapper.readValue(bookTocAnalyzeStr, PDFBookTocAnalyzeDto.class);
@@ -64,16 +62,7 @@ public class BookRegisterController {
         System.out.println("bookCover.getOriginalFilename() = " + bookCover.getOriginalFilename());
 
         bookRegisterService.pdfBookRegister(bookRegisterDto, bookFile, bookCover);
-
-
     }
-
-    @PostMapping("/test")
-    public String test2() {
-        System.out.println("welcome");
-        return "ok";
-    }
-
 
 
 

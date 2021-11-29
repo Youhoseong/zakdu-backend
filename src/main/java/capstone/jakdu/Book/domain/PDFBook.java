@@ -35,6 +35,7 @@ public class PDFBook {
     private Long price;
     private int realStartPage;
     private int pdfPageCount;
+    private String type;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
@@ -67,6 +68,7 @@ public class PDFBook {
         this.pdfPageCount = pdfPageCount;
         this.bookFile = bookFile;
         this.bookCover = bookCover;
+        this.type = "pdf";
     }
 
 

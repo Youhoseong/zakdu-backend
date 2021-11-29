@@ -1,11 +1,14 @@
 package capstone.jakdu.encrypt;
 
+import capstone.jakdu.Book.encryption.AESEncrypt;
 import nl.siegmann.epublib.domain.Book;
 import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.domain.TableOfContents;
 import nl.siegmann.epublib.epub.EpubReader;
 import nl.siegmann.epublib.epub.EpubWriter;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -15,12 +18,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Arrays;
 
+@SpringBootTest
 public class EPUBEncryptTest {
 
     private final String alg = "AES/CBC/PKCS5Padding";
     private final String aesKey = "abcdefghijklmnopqrstuvwxyzabcdef";
     private final String aesIv = "0123456789abcdef";
-
+    @Autowired
+    private AESEncrypt encryptor;
     private final String hiddenDivPrefix = "<div class= \"class\" name=\"name\" id=\"id\" style=\"display:none\">";
     private final String hiddenDivPostfix = "</div>";
 
@@ -112,11 +117,11 @@ public class EPUBEncryptTest {
             Path fileInsideZipPath = fs.getPath("/OEBPS/Cath_9780553418828_epub3_itr_r1.xhtml");
             InputStream inputStream = Files.newInputStream(fileInsideZipPath);
             byte[] bytes = inputStream.readAllBytes();
-            byte[] encryptedData = encrypt(bytes, alg, aesKey, aesIv);
-            Files.write(fileInsideZipPath, encryptedData, StandardOpenOption.WRITE);
-
+            String encrypted = encryptor.encrypt(bytes, aesKey.getBytes(StandardCharsets.UTF_8), aesIv.getBytes(StandardCharsets.UTF_8));
+            Files.write(fileInsideZipPath, encrypted.getBytes(StandardCharsets.UTF_8), StandardOpenOption.WRITE);
+            System.out.println("fileInsideZipPath = " + fileInsideZipPath);
             System.out.println("origin = " + new String(bytes, StandardCharsets.UTF_8));
-            System.out.println("encrypted = " + new String(encryptedData, StandardCharsets.UTF_8));
+            System.out.println("encrypted = " + new String(encrypted.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
