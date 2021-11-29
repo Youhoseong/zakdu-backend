@@ -37,8 +37,13 @@ public class User {
         this.username = username;
         this.email = email;
         this.password = "{noop}"+password;
-        this.userType = userType;
         this.point = point;
+
+        if(userType =="customer") {
+            this.userType = "ROLE_CUSTOMER";
+        } else if(userType == "seller"){
+            this.userType = "ROLE_SELLER";
+        }
     }
 
     public static User of(
