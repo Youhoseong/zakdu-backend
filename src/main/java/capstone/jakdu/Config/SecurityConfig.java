@@ -1,4 +1,4 @@
-package capstone.jakdu.User.config;
+package capstone.jakdu.Config;
 
 import capstone.jakdu.User.filter.JwtFilter;
 import capstone.jakdu.User.service.UserService;
@@ -24,6 +24,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private UserService userService;
     @Autowired
     private JwtFilter jwtFilter;
+
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(userService);
@@ -37,12 +38,22 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable().authorizeRequests()
-                .antMatchers("/authenticate").permitAll()
-                .antMatchers("/book-purchase").permitAll()
-                .anyRequest().permitAll()
-                .and().exceptionHandling().and().sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+        http
+                .csrf().disable()
+                    .authorizeRequests()
+                    .antMatchers("/user/register/**").permitAll()
+                    .antMatchers("/test/**").hasRole("CUSTOMER")
+                    .antMatchers("/book-purchase/**").hasRole("SELLER")
+                    .anyRequest().permitAll()
+                .and()
+                    .formLogin()
+                //.loginPage("/")
+                    .usernameParameter("email")
+                .and()
+                    .exceptionHandling()
+                .and()
+                    .sessionManagement()
+                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);;
     }
 
