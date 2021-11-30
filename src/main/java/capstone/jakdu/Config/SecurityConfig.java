@@ -41,10 +41,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .csrf().disable()
                     .authorizeRequests()
+                    .antMatchers("/user/skip-login").authenticated()
+                    .antMatchers("/user/my-info").authenticated()
                     .antMatchers("/user/register/**").permitAll()
                     .antMatchers("/test/**").hasRole("CUSTOMER")
                     .antMatchers("/book-purchase/**").hasRole("SELLER")
-                    .anyRequest().permitAll()
+                    .anyRequest().authenticated()
                 .and()
                     .formLogin()
                 //.loginPage("/")

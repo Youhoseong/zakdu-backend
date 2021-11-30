@@ -39,10 +39,16 @@ public class User {
         this.password = "{noop}"+password;
         this.point = point;
 
-        if(userType =="customer") {
+        System.out.println("userType : "+ userType);
+        if(userType.equals("customer")) {
+            System.out.println("Role_customer");
             this.userType = "ROLE_CUSTOMER";
-        } else if(userType == "seller"){
+        } else if(userType.equals("seller")){
+            System.out.println("ROLE_SELLER");
             this.userType = "ROLE_SELLER";
+        } else {
+            System.out.println("userType");
+            this.userType = userType;
         }
     }
 
@@ -52,6 +58,11 @@ public class User {
             String password,
             String userType,
             Long point){
+            if(userType =="customer") {
+                userType = "ROLE_CUSTOMER";
+            } else if(userType == "seller"){
+                userType = "ROLE_SELLER";
+            }
         return new User(username,email,password, userType,point);
     }
 
