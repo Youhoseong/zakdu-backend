@@ -9,10 +9,13 @@ import capstone.jakdu.Book.repository.PDFKeyRepository;
 import capstone.jakdu.Book.service.BookKeyService;
 import capstone.jakdu.Common.response.ResponseDto;
 import capstone.jakdu.Common.response.StatusEnum;
+import capstone.jakdu.User.domain.User;
+import capstone.jakdu.User.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +27,7 @@ public class BookKeyController {
     private final PDFKeyRepository pdfKeyRepository;
     private final PDFBookRepository pdfBookRepository;
     private final BookKeyService bookKeyService;
+    private final UserService userService;
 
     @GetMapping("/pdf_test")
     public ResponseDto pdfKeyTest(@RequestParam("book_id") Long id) {
@@ -75,8 +79,8 @@ public class BookKeyController {
 
     @GetMapping("/pdf-keys/{bookId}")
     public ResponseDto purchasedPdfBookKeys(Authentication authentication, @PathVariable Long bookId) {
-        System.out.println("authentication.getName() = " + authentication.getName());
-        List<PDFKeyDto> keys = bookKeyService.purchasedPdfKeys(bookId, 2L);
+        User user = userService.findUserByAuthentication(authentication);
+        List<PDFKeyDto> keys = bookKeyService.purchasedPdfKeys(bookId, user.getId());
         return new ResponseDto(StatusEnum.OK, "success", keys);
     }
 }

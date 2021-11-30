@@ -8,6 +8,7 @@ import capstone.jakdu.Common.response.StatusEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,7 +28,7 @@ public class BookDownloadController {
     private final EPUBBookEncryptService epubBookEncryptService;
 
     @GetMapping("/pdf")
-    public ResponseDto getFileNames(@RequestParam("id") Long id) throws IOException {
+    public ResponseDto getFileNames(Authentication authentication, @RequestParam("id") Long id) throws IOException {
         // 유저 구매여부 확인, 유저 정보도 추가로 받아야 함
         BookFileNameDto bookDownloadDto = bookDownloadService.downloadBook(id);
 
@@ -40,7 +41,7 @@ public class BookDownloadController {
     }
 
     @GetMapping("/pdf-2")
-    public ResponseEntity<InputStreamResource> downloadPdfBook2(@RequestParam("id") Long id) throws FileNotFoundException {
+    public ResponseEntity<InputStreamResource> downloadPdfBook2(Authentication authentication, @RequestParam("id") Long id) throws FileNotFoundException {
         return bookDownloadService.downloadPdfBook(id);
     }
 
