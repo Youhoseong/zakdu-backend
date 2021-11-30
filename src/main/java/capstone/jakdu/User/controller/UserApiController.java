@@ -9,6 +9,7 @@ import capstone.jakdu.User.service.UserService;
 import capstone.jakdu.User.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.http.parser.Authorization;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -53,9 +55,26 @@ public class UserApiController {
 //            ex.printStackTrace();
 //            throw new Exception("invalid email or password");
         }
+        String jwt = jwtUtil.generateToken(authRequest.getEmail());
+
         return jwtUtil.generateToken(authRequest.getEmail());
     }
-
+    @GetMapping("/my-info")
+    public String  getMyInfo(HttpServletRequest httpServletRequest) throws Exception {
+        String authorizationHeader = httpServletRequest.getHeader("Authorization");
+        String token = null;
+        String email = null;
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7);
+            email = jwtUtil.extractUsername(token);
+        }
+        User user = userInfoRepository.findByEmail(email);
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonInString = mapper.writeValueAsString(user);
+        System.out.println("getMyinfo ::::::: "+user);
+        System.out.println("getMyinfo ::::::: "+jsonInString);
+        return jsonInString;
+    }
     /** 회원가입 */
     @PostMapping("/register/register-user")
     public String registUser(@RequestBody UserSaveRequestDto userSaveRequestDto) throws IOException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException {
@@ -100,6 +119,12 @@ public class UserApiController {
         System.out.println("welcome");
         return "ok";
     }
+
+    @GetMapping("/skip-login")
+    public boolean skipLoginCheck() throws IOException {
+        return true;
+    }
+
 
 //    /* 유저 등록 */
 //    @PostMapping("/user/")

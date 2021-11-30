@@ -31,12 +31,13 @@ public class UserService implements UserDetailsService {
     @Transactional(rollbackOn = {Exception.class})
     public void userRegister(UserSaveRequestDto userSaveRequestDto) throws IOException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
         User user = User.of(
-                userSaveRequestDto.getUsername(),
-                userSaveRequestDto.getEmail(),
-                userSaveRequestDto.getPassword(),
-                userSaveRequestDto.getUserType(),
-                userSaveRequestDto.getPoint()
-        );
+                        userSaveRequestDto.getUsername(),
+                        userSaveRequestDto.getEmail(),
+                        userSaveRequestDto.getPassword(),
+                        userSaveRequestDto.getUserType(),
+                        userSaveRequestDto.getPoint()
+                    );
+        System.out.println(user);
         userInfoRepository.save(user);
     }
 
