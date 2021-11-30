@@ -27,13 +27,19 @@ public class PurchasedPageList {
     }
 
     public void pageUpdate(List<Boolean> pageList) {
-        this.pageList = pageList;
+        for(int i=0; i<this.pageList.size(); i++ ) {
+            if(!this.pageList.get(i)) {
+                this.pageList.set(i, pageList.get(i));
+            }
+        }
+
     }
 
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
 
 
     private Long userId;
