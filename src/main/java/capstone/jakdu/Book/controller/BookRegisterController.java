@@ -6,7 +6,6 @@ import capstone.jakdu.Book.object.dto.PDFBookTocAnalyzeDto;
 import capstone.jakdu.Book.service.BookRegisterService;
 import capstone.jakdu.Common.response.ResponseDto;
 import capstone.jakdu.Common.response.StatusEnum;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
