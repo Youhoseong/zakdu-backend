@@ -51,7 +51,7 @@ public class BookKeyController {
                 .build();
 
         userPageList = purchasedPageList.getPageList();
-        for (int i = startPage; i < endPage; i++) {
+        for (int i = startPage - 1; i < endPage; i++) {
             int test = i % 10;
             if(userPageList.get(i) && test != 7 && test != 8 && test != 9) {
                 boughtPageList.add(i);
