@@ -27,7 +27,6 @@ public class BookKeyService {
 
     public List<PDFKeyDto> purchasedPdfKeys(Long bookId, Long userId) {
 
-        PDFBook pdfBook = pdfBookRepository.findById(bookId).orElseThrow(NoSuchElementException::new);
         PurchasedPageList purchasedPageList = purchasedPageListRepository.findByPdfBookIdAndUserId(bookId, userId)
                 .orElseThrow(NoSuchElementException::new);
 
@@ -35,7 +34,7 @@ public class BookKeyService {
         List<Integer> purchasedPageNumbers = new ArrayList<>();
         for (int i = 0; i < pageList.size(); i++) {
             if(pageList.get(i)) {
-                purchasedPageNumbers.add(i);
+                purchasedPageNumbers.add(i - 1);
             }
         }
 

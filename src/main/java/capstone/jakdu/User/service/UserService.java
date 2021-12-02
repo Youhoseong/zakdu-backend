@@ -55,6 +55,7 @@ public class UserService implements UserDetailsService {
     }
 
     public User findUserByAuthentication(Authentication authentication) {
+        System.out.println("authentication = " + authentication);
         return userInfoRepository.findByEmail(authentication.getName());
     }
 
