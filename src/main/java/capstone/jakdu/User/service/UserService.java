@@ -6,6 +6,7 @@ import capstone.jakdu.User.domain.AuthRequest;
 import capstone.jakdu.User.repository.UserInfoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -51,6 +52,11 @@ public class UserService implements UserDetailsService {
         roles.add(new SimpleGrantedAuthority(user.getUserType()));
 
         return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), roles);
+    }
+
+    public User findUserByAuthentication(Authentication authentication) {
+        System.out.println("authentication = " + authentication);
+        return userInfoRepository.findByEmail(authentication.getName());
     }
 
 //    @Transactional

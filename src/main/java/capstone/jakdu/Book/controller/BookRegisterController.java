@@ -6,6 +6,7 @@ import capstone.jakdu.Book.object.dto.PDFBookTocAnalyzeDto;
 import capstone.jakdu.Book.service.BookRegisterService;
 import capstone.jakdu.Common.response.ResponseDto;
 import capstone.jakdu.Common.response.StatusEnum;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -52,7 +53,7 @@ public class BookRegisterController {
     public void registerBook(@RequestParam("bookRegisterDto") String bookRegisterStr,
                      @RequestParam("bookFile") MultipartFile bookFile, 
                      @RequestParam("bookCover") MultipartFile bookCover) throws IOException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         System.out.println("bookRegisterStr = " + bookRegisterStr);
         BookRegisterDto bookRegisterDto = mapper.readValue(bookRegisterStr, BookRegisterDto.class);
 

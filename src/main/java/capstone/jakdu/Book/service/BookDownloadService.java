@@ -4,10 +4,12 @@ import capstone.jakdu.Book.domain.FileStream;
 import capstone.jakdu.Book.domain.PDFBook;
 import capstone.jakdu.Book.object.dto.BookFileNameDto;
 import capstone.jakdu.Book.repository.PDFBookRepository;
+import capstone.jakdu.Book.repository.PurchasedPageListRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.dao.PermissionDeniedDataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,7 @@ public class BookDownloadService {
 
     private final PDFBookRepository pdfBookRepository;
     private final PDFBookEncryptService pdfBookEncryptService;
+    private final PurchasedPageListRepository purchasedPageListRepository;
 
     public BookFileNameDto downloadBook(Long bookId) throws IOException {
         PDFBook pdfBook = pdfBookRepository.findById(bookId).get();
@@ -39,7 +42,11 @@ public class BookDownloadService {
         return new BookFileNameDto(bookId, fileName, coverFileName);
     }
 
-    public ResponseEntity<InputStreamResource> downloadPdfBook(Long bookId) throws FileNotFoundException {
+    public ResponseEntity<InputStreamResource> downloadPdfBook(Long bookId, Long userId) throws FileNotFoundException {
+        // 구매 여부 확인
+        if(!purchasedPageListRepository.existsByPdfBookIdAndUserId(bookId, userId)) {
+            return ResponseEntity.badRequest().body(null);
+        }
         PDFBook pdfBook = pdfBookRepository.findById(bookId).get();
 
         FileStream bookFile = pdfBook.getBookFile();

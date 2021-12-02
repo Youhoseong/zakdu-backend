@@ -6,14 +6,16 @@ import capstone.jakdu.Book.domain.PurchasedPageList;
 import capstone.jakdu.Book.object.dto.PDFKeyDto;
 import capstone.jakdu.Book.repository.PDFBookRepository;
 import capstone.jakdu.Book.repository.PDFKeyRepository;
+import capstone.jakdu.Book.service.BookKeyService;
 import capstone.jakdu.Common.response.ResponseDto;
 import capstone.jakdu.Common.response.StatusEnum;
+import capstone.jakdu.User.domain.User;
+import capstone.jakdu.User.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +26,8 @@ public class BookKeyController {
 //  유저 추가되면 추가 필요!
     private final PDFKeyRepository pdfKeyRepository;
     private final PDFBookRepository pdfBookRepository;
+    private final BookKeyService bookKeyService;
+    private final UserService userService;
 
     @GetMapping("/pdf_test")
     public ResponseDto pdfKeyTest(@RequestParam("book_id") Long id) {
@@ -71,5 +75,12 @@ public class BookKeyController {
 
 
         return new ResponseDto(StatusEnum.OK, "success", keyDtos);
+    }
+
+    @GetMapping("/pdf-keys/{bookId}")
+    public ResponseDto purchasedPdfBookKeys(Authentication authentication, @PathVariable Long bookId) {
+        User user = userService.findUserByAuthentication(authentication);
+        List<PDFKeyDto> keys = bookKeyService.purchasedPdfKeys(bookId, user.getId());
+        return new ResponseDto(StatusEnum.OK, "success", keys);
     }
 }
