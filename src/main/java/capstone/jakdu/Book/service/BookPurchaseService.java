@@ -13,6 +13,9 @@ import capstone.jakdu.Book.object.dto.PurchasePageResDto;
 import capstone.jakdu.Book.repository.PDFBookRepository;
 import capstone.jakdu.Book.repository.PDFBookTocRepository;
 import capstone.jakdu.Book.repository.PurchasedPageListRepository;
+import capstone.jakdu.User.domain.User;
+import capstone.jakdu.User.repository.UserInfoRepository;
+import capstone.jakdu.User.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,7 @@ public class BookPurchaseService {
     private final PDFBookTocRepository pdfBookTocRepository;
     private final BookRegisterService bookRegisterService;
     private final PurchasedPageListRepository purchasedPageListRepository;
+    private final UserInfoRepository userRepository;
 
     // pdf and epub을 동시에 가져오는 메소드 필요
     public List<BookResponseDto> findAllPDFBook() throws IOException {
@@ -66,27 +70,25 @@ public class BookPurchaseService {
     }
 
     @Transactional(rollbackOn = {Exception.class})
-    public void pdfPurchase(Long bookId, PdfBookPurchaseDto pdfBookPurchaseDto){
+    public void pdfPurchase(Long bookId, PdfBookPurchaseDto pdfBookPurchaseDto, String userEmail){
         PDFBook pdfBook = pdfBookRepository.findByIdOrElseThrow(bookId);
-        Optional<PurchasedPageList> purchasedPageList = purchasedPageListRepository.findByPdfBookIdAndUserId(pdfBook.getId(), 1L);
+        User user = userRepository.findByEmail(userEmail);
+        Optional<PurchasedPageList> purchasedPageList = purchasedPageListRepository.findByPdfBookIdAndUserId(pdfBook.getId(), user.getId());
 
         if(purchasedPageList.isPresent()) {
             purchasedPageList.get().pageUpdate(pdfBookPurchaseDto.getPurchasePageList());
-
-            for(int i=0; i<purchasedPageList.get().getPageList().size(); i++) {
-                System.out.println("page = "+ i + " :" + purchasedPageList.get().getPageList().get(i));
-            }
             purchasedPageListRepository.save(purchasedPageList.get());
         } else {
-            PurchasedPageList createdPurchasedPageList = PurchasedPageList.of(pdfBook, pdfBookPurchaseDto.getPurchasePageList());
+            PurchasedPageList createdPurchasedPageList = PurchasedPageList.of(pdfBook, pdfBookPurchaseDto.getPurchasePageList(), user);
             purchasedPageListRepository.save(createdPurchasedPageList);
         }
 
     }
 
 
-    public PurchasePageResDto getPurchasePageInfo(Long bookId, Long userId) {
-        Optional<PurchasedPageList> purchasedPageList = purchasedPageListRepository.findByPdfBookIdAndUserId(bookId, 1L);
+    public PurchasePageResDto getPurchasePageInfo(Long bookId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail);
+        Optional<PurchasedPageList> purchasedPageList = purchasedPageListRepository.findByPdfBookIdAndUserId(bookId, user.getId());
         int pageCount = 0;
         if(purchasedPageList.isPresent()) {
             for (Boolean b : purchasedPageList.get().getPageList()) {

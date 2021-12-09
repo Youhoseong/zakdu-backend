@@ -1,9 +1,11 @@
 package capstone.jakdu.Book.domain;
 
+import capstone.jakdu.User.domain.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -16,14 +18,14 @@ import java.util.List;
 @Builder
 public class PurchasedPageList {
 
-    public PurchasedPageList(PDFBook pdfBook, List<Boolean> purchasePageList) {
+    public PurchasedPageList(PDFBook pdfBook, List<Boolean> purchasePageList, User user) {
         this.pdfBook = pdfBook;
         this.pageList = purchasePageList;
-        this.userId = 1L;
+        this.user = user;
     }
 
-    public static PurchasedPageList of(PDFBook pdfBook, List<Boolean> purchasePageList) {
-        return new PurchasedPageList(pdfBook,purchasePageList);
+    public static PurchasedPageList of(PDFBook pdfBook, List<Boolean> purchasePageList, User user) {
+        return new PurchasedPageList(pdfBook,purchasePageList, user);
     }
 
     public void pageUpdate(List<Boolean> pageList) {
@@ -41,11 +43,11 @@ public class PurchasedPageList {
     private Long id;
 
 
-
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private User user;
 
     // user relationship
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
     private PDFBook pdfBook;
 
     @ElementCollection
