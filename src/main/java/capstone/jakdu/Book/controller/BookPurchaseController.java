@@ -11,6 +11,7 @@ import capstone.jakdu.Common.response.StatusEnum;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -42,20 +43,18 @@ public class BookPurchaseController {
     }
 
     @PostMapping("/pdf-book/{bookId}")
-    public ResponseDto pdfBookPurchase(@PathVariable Long bookId, @RequestParam String bookPurchaseStr) throws JsonProcessingException {
+    public ResponseDto pdfBookPurchase(Authentication authentication, @PathVariable Long bookId, @RequestParam String bookPurchaseStr) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
-        System.out.println("bookPurchaseDto = " + bookPurchaseStr);
         PdfBookPurchaseDto bookPurchaseDto = mapper.readValue(bookPurchaseStr, PdfBookPurchaseDto.class);
 
-        // 유저 참조 추가해야함
-        bookPurchaseService.pdfPurchase(bookId, bookPurchaseDto);
+        bookPurchaseService.pdfPurchase(bookId, bookPurchaseDto, authentication.getName());
         return new ResponseDto(StatusEnum.OK, "success", null);
     }
 
     // bookId와 유저 정보로 유저가 구입한 책 페이지을 리턴하는 컨트롤러
-    @GetMapping("/info/page/{bookId}/{userId}")
-    public ResponseDto pdfBookPageInformation(@PathVariable Long bookId, @PathVariable Long userId) {
-        PurchasePageResDto purchasePageInfo = bookPurchaseService.getPurchasePageInfo(bookId, userId);
+    @GetMapping("/info/page/{bookId}")
+    public ResponseDto pdfBookPageInformation(@PathVariable Long bookId, Authentication authentication) {
+        PurchasePageResDto purchasePageInfo = bookPurchaseService.getPurchasePageInfo(bookId, authentication.getName());
         return new ResponseDto(StatusEnum.OK, "success", purchasePageInfo);
     }
 
